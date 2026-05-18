@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Piano Deri — Araç Takip</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<style>
+:root{
+  --gold:#c9a84c;--gold2:#e8d5a3;
+  --dark:#07080f;--bg2:#0f1017;--card:#14161f;
+  --border:#252836;--text:#f0f0f2;--text2:#9597a5;
+  --green:#35d979;--red:#ff5f6e;--blue:#68d4ff;--warn:#f59e0b;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--dark);color:var(--text);font-family:"Segoe UI",Arial,sans-serif;font-size:13px;overflow:hidden;height:100vh}
+.topbar{height:46px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:14px;flex-shrink:0}
+.tb-logo{font-size:14px;font-weight:700;letter-spacing:.15em;color:var(--gold2)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:blink 1.4s infinite;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.tb-info{font-size:11px;color:var(--text2)}
+.tb-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.tb-btn{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.2);color:var(--gold);padding:5px 12px;font-size:11px;cursor:pointer;border-radius:4px;transition:background .2s}
+.tb-btn:hover{background:rgba(201,168,76,.2)}
+.tb-btn.active{background:rgba(201,168,76,.2);border-color:var(--gold)}
+.layout{display:grid;grid-template-columns:290px 1fr;height:calc(100vh - 46px)}
+.panel{background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+.panel-hd{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;background:var(--bg2);z-index:10}
+.panel-hd h3{font-size:12px;letter-spacing:.15em;color:var(--gold2)}
+.badge-ct{background:var(--gold);color:var(--dark);padding:2px 7px;font-size:10px;font-weight:700;border-radius:10px}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);flex-shrink:0}
+.stat{background:var(--card);padding:7px 4px;text-align:center}
+.stat-val{font-size:18px;font-weight:900;line-height:1.2}
+.stat-lbl{font-size:9px;color:var(--text2);letter-spacing:.08em}
+.alert-box{margin:8px;border-radius:6px;padding:10px;flex-shrink:0;display:none}
+.alert-box.show{display:block;background:rgba(255,95,110,.1);border:1px solid rgba(255,95,110,.3)}
+.ab-title{font-size:11px;font-weight:700;display:flex;align-items:center;gap:5px;margin-bottom:6px;color:var(--red)}
+.ab-row{font-size:11px;padding:3px 0;border-bottom:1px solid rgba(255,95,110,.1);display:flex;align-items:center;gap:5px}
+.ab-row:last-child{border-bottom:none}
+.filters{padding:6px 8px;border-bottom:1px solid var(--border);display:flex;gap:4px;flex-shrink:0}
+.filter-btn{padding:4px 10px;border-radius:12px;font-size:10px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .2s}
+.filter-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.08)}
+.veh-list{padding:6px;flex:1}
+.veh-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:5px;cursor:pointer;transition:all .2s}
+.veh-card:hover{border-color:rgba(201,168,76,.3);background:#161524}
+.veh-card.v-alert{border-left:3px solid var(--red);background:rgba(255,95,110,.05)}
+.veh-card.v-near{border-left:3px solid var(--warn);background:rgba(245,158,11,.04)}
+.veh-card.v-move{border-left:3px solid var(--green)}
+.veh-card.v-idle{border-left:3px solid var(--text2)}
+.veh-card.selected{border-color:var(--gold)!important;background:#1a1828!important}
+.vc-top{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.vc-plaka{font-size:13px;font-weight:700;flex:1}
+.vc-status{font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;flex-shrink:0}
+.st-alert{background:rgba(255,95,110,.15);color:var(--red)}
+.st-near{background:rgba(245,158,11,.15);color:var(--warn)}
+.st-move{background:rgba(53,217,121,.15);color:var(--green)}
+.st-idle{background:rgba(149,151,165,.1);color:var(--text2)}
+.vc-info{display:flex;gap:10px;font-size:10px;color:var(--text2);flex-wrap:wrap}
+.vc-bar{height:2px;background:var(--border);border-radius:1px;margin-top:5px;overflow:hidden}
+.vc-fill{height:100%;border-radius:1px;transition:width .3s}
+.km-summary{margin:6px;background:rgba(104,212,255,.06);border:1px solid rgba(104,212,255,.15);border-radius:6px;padding:10px;flex-shrink:0}
+.kms-title{font-size:10px;letter-spacing:.3em;color:var(--blue);margin-bottom:6px}
+.kms-row{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);padding:2px 0}
+.kms-row span:last-child{color:var(--text);font-weight:700}
+#map{width:100%;height:100%}
+.leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.75) saturate(.6) contrast(1.1)}
+.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-control{filter:none!important}
+.leaflet-popup-content-wrapper{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.8)}
+.leaflet-popup-tip{background:var(--card)}
+#loadingOverlay{position:fixed;inset:0;background:var(--dark);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.notif-container{position:fixed;top:56px;right:16px;z-index:9000;display:flex;flex-direction:column;gap:8px;max-width:300px}
+.notif-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:12px;animation:slideIn .3s ease;box-shadow:0 4px 20px rgba(0,0,0,.6)}
+.notif-item.n-alert{border-left:3px solid var(--red)}
+.notif-item.n-warn{border-left:3px solid var(--warn)}
+.notif-item.n-ok{border-left:3px solid var(--green)}
+@keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+</style>
+</head>
+<body>
+
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <div id="loadingText" style="font-size:13px;color:var(--text2);letter-spacing:.1em">Başlatılıyor...</div>
+</div>
+
+<div class="notif-container" id="notifContainer"></div>
+
+<div class="topbar">
+  <div class="live-dot" id="liveDot"></div>
+  <div class="tb-logo">🚗 PIANO DERİ — ARAÇ TAKİP</div>
+  <div class="tb-info">Kemer Bölgesi · <span id="lastUpdate">—</span></div>
+  <div class="tb-right">
+    <button class="tb-btn" onclick="refreshAll()">↺ Yenile</button>
+    <button class="tb-btn active" id="btnAuto" onclick="toggleAuto()">⏱ Oto: Açık</button>
+    <button class="tb-btn" onclick="fitMap()">⊡ Sığdır</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="panel">
+    <div class="panel-hd">
+      <h3>ARAÇLAR</h3>
+      <div class="badge-ct" id="totalBadge">0</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-val" id="sMove" style="color:var(--green)">0</div><div class="stat-lbl">HAREKET</div></div>
+      <div class="stat"><div class="stat-val" id="sIdle" style="color:var(--text2)">0</div><div class="stat-lbl">BEKLİYOR</div></div>
+      <div class="stat"><div class="stat-val" id="sAlert" style="color:var(--red)">0</div><div class="stat-lbl">UYARI</div></div>
+      <div class="stat"><div class="stat-val" id="sOnline" style="color:var(--gold)">0</div><div class="stat-lbl">BAĞLI</div></div>
+    </div>
+    <div class="alert-box" id="alertBox">
+      <div class="ab-title">🚨 YAKINLIK UYARISI</div>
+      <div id="alertList"></div>
+    </div>
+    <div class="filters">
+      <button class="filter-btn active" onclick="setFilter(this,'all')">Tümü</button>
+      <button class="filter-btn" onclick="setFilter(this,'alert')">Uyarı</button>
+      <button class="filter-btn" onclick="setFilter(this,'move')">Hareket</button>
+      <button class="filter-btn" onclick="setFilter(this,'idle')">Bekliyor</button>
+    </div>
+    <div class="veh-list" id="vehList">
+      <div style="text-align:center;padding:30px;color:var(--text2);font-size:12px">Araçlar yükleniyor...</div>
+    </div>
+    <div class="km-summary">
+      <div class="kms-title">📏 GÜNLÜK KM</div>
+      <div class="kms-row"><span>Toplam</span><span id="kmTotal">—</span></div>
+      <div class="kms-row"><span>Ortalama</span><span id="kmAvg">—</span></div>
+      <div class="kms-row"><span>En çok</span><span id="kmMax">—</span></div>
+      <div class="kms-row"><span>En az</span><span id="kmMin">—</span></div>
+    </div>
+  </div>
+  <div id="map"></div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────
+const FIREBASE_CONFIG = {
+  apiKey: "FIREBASE_API_KEY_BURAYA",
+  authDomain: "PROJE_ID.firebaseapp.com",
+  databaseURL: "https://PROJE_ID-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "PROJE_ID",
+  storageBucket: "PROJE_ID.appspot.com",
+  messagingSenderId: "SENDER_ID",
+  appId: "APP_ID"
+};
+
+const TNB = { url:'https://ws.ats.tnbmobil.com.tr/webservis.asmx', firma:'3029', user:'kayaderiwb', pass:'1234' };
+const MERKEZ = { lat:36.59555186452578, lng:30.54664261177073, uyariKm:1.0 };
+
+const OTELLER = [
+  {ad:'BAIA CLUB SÖNMEZ OTEL',    bolge:'BELDİBİ', lat:36.742320456154076, lng:30.564122406118482, uyariM:300},
+  {ad:'ATLANTIK BEACH OTEL',      bolge:'BELDİBİ', lat:36.71993763983792,  lng:30.56299756282915,  uyariM:300},
+  {ad:'AKKA ANTEDON',             bolge:'BELDİBİ', lat:36.72636373652341,  lng:30.56080006224915,  uyariM:300},
+  {ad:'AMARA JUJU PREMIER OTEL',  bolge:'BELDİBİ', lat:36.742320456154076, lng:30.564122406118482, uyariM:300},
+  {ad:'GYPSOPHILA CLUB MARINE',   bolge:'BELDİBİ', lat:36.70410797403394,  lng:30.56950463370858,  uyariM:300},
+  {ad:'FAME RESIDENCE',           bolge:'GÖYNÜK',  lat:36.6631007840222,   lng:30.557582102748945, uyariM:300},
+  {ad:'TRANSATLANTIK OTEL',       bolge:'GÖYNÜK',  lat:36.66422924622899,  lng:30.559735613279194, uyariM:300},
+  {ad:'FASHION OTEL',             bolge:'GÖYNÜK',  lat:36.674084956056056, lng:30.56600169572788,  uyariM:300},
+  {ad:'AMARA CONFORT OTEL',       bolge:'GÖYNÜK',  lat:36.6566923273813,   lng:30.555731900043895, uyariM:300},
+  {ad:'MIRAGE PARK OTEL',         bolge:'GÖYNÜK',  lat:36.65973359789853,  lng:30.556965977089607, uyariM:300},
+  {ad:'SHERWOOD EXCLUSIVE',       bolge:'GÖYNÜK',  lat:36.65407415290037,  lng:30.554849991870398, uyariM:300},
+  {ad:'SHERWOOD GREENWOOD OTEL',  bolge:'GÖYNÜK',  lat:36.661372296994536, lng:30.55766893857584,  uyariM:300},
+  {ad:'ARMAS GÜL BEACH OTEL',    bolge:'KEMER',   lat:36.61614724971822,  lng:30.555646934811165, uyariM:300},
+  {ad:'ROX ROYAL OTEL',           bolge:'KEMER',   lat:36.60657541320782,  lng:30.562113568123223, uyariM:300},
+  {ad:'ARMAS BEACH OTEL',         bolge:'KEMER',   lat:36.61502254395139,  lng:30.55631045135891,  uyariM:300},
+  {ad:'BONA DEA OTEL',            bolge:'KEMER',   lat:36.61467545109891,  lng:30.556415713114525, uyariM:300},
+  {ad:'FAME RESIDENCE KEMER',     bolge:'KEMER',   lat:36.6028255452992,   lng:30.566100148126218, uyariM:300},
+  {ad:'AKKA KLARUS',              bolge:'KİRİŞ',   lat:36.57479861290045,  lng:30.58030524584158,  uyariM:300},
+  {ad:'AKKA ALINDA',              bolge:'KİRİŞ',   lat:36.57433491513708,  lng:30.58199458530967,  uyariM:300},
+  {ad:'LİMAK LİMRA OTEL',         bolge:'KİRİŞ',   lat:36.56909429203051,  lng:30.576518050495153, uyariM:300},
+  {ad:'SAILORS BEACH OTEL',       bolge:'KİRİŞ',   lat:36.57584699861588,  lng:30.582157214259134, uyariM:300},
+  {ad:'ARMAS LABADA OTEL',        bolge:'ÇAMYUVA', lat:36.55656329864491,  lng:30.5679608804201,   uyariM:300},
+  {ad:'MARTA MYRA OTEL',          bolge:'TEKİROVA',lat:36.504258773875556, lng:30.534462179520716, uyariM:300},
+  {ad:'ARMAS KAPLAN OTEL',        bolge:'TEKİROVA',lat:36.504288930620966, lng:30.52922376477629,  uyariM:300},
+];
+
+// ── STATE ───────────────────────────────────────
+let db=null, map, autoTimer=null;
+let markerMap={}, vehicles={}, currentFilter='all', selectedPlaka=null;
+let autoRefresh=true, prevAlerts=new Set();
+
+// ── HAVERSINE ───────────────────────────────────
+function haversine(la1,lo1,la2,lo2){
+  const R=6371,dLa=(la2-la1)*Math.PI/180,dLo=(lo2-lo1)*Math.PI/180;
+  const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// ── HARİTA ─────────────────────────────────────
+function initMap(){
+  map=L.map('map',{center:[36.62,30.558],zoom:12});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
+
+  // Mağaza
+  L.marker([MERKEZ.lat,MERKEZ.lng],{icon:L.divIcon({className:'',
+    html:`<div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div style="background:#c9a84c;border-radius:50% 50% 50% 0;width:28px;height:28px;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,.3);box-shadow:0 3px 12px rgba(201,168,76,.7)"><span style="transform:rotate(45deg);font-size:13px">🏪</span></div><div style="font-size:9px;color:#e8d5a3;background:rgba(7,8,15,.85);padding:1px 5px;border-radius:3px;white-space:nowrap;font-weight:700">PIANO DERİ</div></div>`,
+    iconSize:[80,48],iconAnchor:[40,44]
+  }),zIndexOffset:1000}).addTo(map).bindPopup('<b style="color:#c9a84c">Piano Deri Mağaza</b><br>Yeni Mah. Akdeniz Cad. No:29/1 Kemer');
+
+  // 1km çember
+  L.circle([MERKEZ.lat,MERKEZ.lng],{radius:1000,color:'#ff5f6e',weight:1.5,fillColor:'#ff5f6e',fillOpacity:.04,dashArray:'8 6'}).addTo(map);
+
+  // Oteller
+  OTELLER.forEach(o=>{
+    L.marker([o.lat,o.lng],{icon:L.divIcon({className:'',
+      html:`<div style="background:rgba(7,8,15,.88);border:1px solid rgba(104,212,255,.5);border-radius:4px;padding:2px 6px;font-size:10px;color:#68d4ff;white-space:nowrap;max-width:155px;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 8px rgba(0,0,0,.6)">🏨 ${o.ad}</div>`,
+      iconSize:[160,20],iconAnchor:[0,10]
+    }),zIndexOffset:500}).addTo(map).bindPopup(`<b style="color:#68d4ff">${o.ad}</b><br><small style="color:#9597a5">${o.bolge}</small>`);
+    L.circle([o.lat,o.lng],{radius:o.uyariM,color:'#68d4ff',weight:.8,fillColor:'#68d4ff',fillOpacity:.04,dashArray:'3 5'}).addTo(map);
+  });
+}
+
+// ── SOAP İSTEĞİ ─────────────────────────────────
+async function tnbSOAP(method,extra=''){
+  const soap=`<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><${method} xmlns="http://tempuri.org/"><firmaKodu>${TNB.firma}</firmaKodu><kullaniciAdi>${TNB.user}</kullaniciAdi><sifre>${TNB.pass}</sifre>${extra}</${method}></soap:Body></soap:Envelope>`;
+  const r=await fetch(TNB.url,{method:'POST',headers:{'Content-Type':'text/xml; charset=utf-8','SOAPAction':`http://tempuri.org/${method}`},body:soap});
+  return r.text();
+}
+
+function getTag(el,tag){const f=el.getElementsByTagName(tag);return f.length?f[0].textContent.trim():'';}
+
+// ── VERİ ÇEK ───────────────────────────────────
+async function fetchVehicles(){
+  try {
+    const xml=await tnbSOAP('wsGetLastLocations');
+    const doc=new DOMParser().parseFromString(xml,'text/xml');
+    const items=doc.getElementsByTagName('VehicleInfo');
+    if(!items.length){
+      // Demo mod — gerçek API boş döndüğünde simüle et
+      demoMode();
+      return;
+    }
+    const nv={};
+    for(const item of items){
+      const plaka=getTag(item,'PlateNo')||getTag(item,'Plate')||getTag(item,'plateNo');
+      const lat=parseFloat(getTag(item,'Lat')||getTag(item,'Latitude')||'0');
+      const lng=parseFloat(getTag(item,'Lng')||getTag(item,'Longitude')||'0');
+      const hiz=parseFloat(getTag(item,'Speed')||'0');
+      if(!plaka||!lat||!lng) continue;
+      nv[plaka]={plaka,lat,lng,hiz,km:vehicles[plaka]?.km||0};
+    }
+    // Km raporu
+    try{
+      const td=new Date().toISOString().split('T')[0].replace(/-/g,'/');
+      const kmXml=await tnbSOAP('wsMileageReport',`<baslangicTarih>${td}</baslangicTarih><bitisTarih>${td}</bitisTarih>`);
+      const kmDoc=new DOMParser().parseFromString(kmXml,'text/xml');
+      for(const ki of kmDoc.getElementsByTagName('MileageInfo')){
+        const p=getTag(ki,'PlateNo')||getTag(ki,'Plate');
+        const k=parseFloat(getTag(ki,'Mileage')||getTag(ki,'TotalDistance')||'0');
+        if(p&&nv[p]) nv[p].km=k;
+      }
+    }catch(e){console.log('Km skip:',e.message);}
+    vehicles=nv;
+    updateAll();
+    saveFirebase();
+    document.getElementById('lastUpdate').textContent='Son: '+new Date().toLocaleTimeString('tr-TR');
+    document.getElementById('liveDot').style.background='var(--green)';
+  } catch(e){
+    console.error('TNB:',e);
+    document.getElementById('liveDot').style.background='var(--red)';
+    demoMode();
+  }
+}
+
+// ── DEMO MOD (API erişilemezse) ──────────────────
+function demoMode(){
+  const demoVehs=[
+    {plaka:'07 ABC 946', lat:36.5980+Math.random()*.005, lng:30.5540+Math.random()*.005, hiz:42+Math.random()*10, km:87},
+    {plaka:'07 DEF 453', lat:36.6030+Math.random()*.005, lng:30.5430+Math.random()*.005, hiz:55+Math.random()*10, km:124},
+    {plaka:'07 GHI 2033',lat:36.6319+Math.random()*.005, lng:30.4992+Math.random()*.005, hiz:68+Math.random()*10, km:156},
+    {plaka:'07 JKL 1892',lat:MERKEZ.lat+.001,            lng:MERKEZ.lng+.001,             hiz:0,                   km:43},
+    {plaka:'07 MNO 2045',lat:36.6045+Math.random()*.005, lng:30.5762+Math.random()*.005, hiz:52+Math.random()*10, km:98},
+    {plaka:'07 PQR 3301',lat:36.5561+Math.random()*.005, lng:30.5401+Math.random()*.005, hiz:61+Math.random()*10, km:201},
+    {plaka:'07 STU 4412',lat:36.5118+Math.random()*.005, lng:30.5222+Math.random()*.005, hiz:74+Math.random()*10, km:178},
+    {plaka:'07 VWX 5521',lat:36.5680+Math.random()*.005, lng:30.5550+Math.random()*.005, hiz:38+Math.random()*10, km:92},
+    {plaka:'07 YZA 6630',lat:36.6120+Math.random()*.005, lng:30.5100+Math.random()*.005, hiz:0,                   km:65},
+    {plaka:'07 BCD 7741',lat:36.6400+Math.random()*.005, lng:30.5600+Math.random()*.005, hiz:81+Math.random()*10, km:210},
+    {plaka:'07 EFG 8852',lat:36.5800+Math.random()*.005, lng:30.5700+Math.random()*.005, hiz:47+Math.random()*10, km:134},
+    {plaka:'07 HIJ 9963',lat:36.5730+Math.random()*.005, lng:30.5820+Math.random()*.005, hiz:0,                   km:78},
+    {plaka:'07 KLM 1074',lat:36.5920+Math.random()*.005, lng:30.5480+Math.random()*.005, hiz:59+Math.random()*10, km:115},
+  ];
+  demoVehs.forEach(v=>{vehicles[v.plaka]=v;});
+  updateAll();
+  document.getElementById('lastUpdate').textContent='Demo: '+new Date().toLocaleTimeString('tr-TR');
+  document.getElementById('liveDot').style.background='var(--warn)';
+}
+
+// ── PROXIMITY ──────────────────────────────────
+function checkProx(v){
+  const dm=haversine(v.lat,v.lng,MERKEZ.lat,MERKEZ.lng);
+  if(dm<=MERKEZ.uyariKm) return {type:'alert',label:`⚠️ ${(dm*1000).toFixed(0)}m`,dist:dm,otel:'MAĞAZA'};
+  let best=null;
+  for(const o of OTELLER){
+    const d=haversine(v.lat,v.lng,o.lat,o.lng);
+    if(d*1000<=o.uyariM) return {type:'alert',label:'⚠️ OTELDE',dist:d,otel:o.ad};
+    if(d*1000<=o.uyariM*3&&(!best||d<best.dist)) best={type:'near',label:`${(d*1000).toFixed(0)}m`,dist:d,otel:o.ad};
+  }
+  if(best) return {...best,distMagaza:dm};
+  return {type:v.hiz<2?'idle':'move',label:v.hiz<2?'Bekliyor':'Hareket',dist:dm,otel:null,distMagaza:dm};
+}
+
+// ── GÜNCELLE ───────────────────────────────────
+function updateAll(){
+  const list=Object.values(vehicles);
+  let cM=0,cI=0,cA=0,alerts=[];
+  list.forEach(v=>{
+    v._prox=checkProx(v);
+    if(v._prox.type==='alert') cA++;
+    else if(v._prox.type==='idle') cI++;
+    else cM++;
+    if(v._prox.type==='alert') alerts.push(v);
+  });
+  document.getElementById('sMove').textContent=cM;
+  document.getElementById('sIdle').textContent=cI;
+  document.getElementById('sAlert').textContent=cA;
+  document.getElementById('sOnline').textContent=list.length;
+  document.getElementById('totalBadge').textContent=list.length;
+  // Km
+  const kms=list.map(v=>v.km).filter(k=>k>0);
+  if(kms.length){
+    const tot=kms.reduce((s,k)=>s+k,0);
+    document.getElementById('kmTotal').textContent=tot.toFixed(0)+' km';
+    document.getElementById('kmAvg').textContent=(tot/list.length).toFixed(0)+' km';
+    document.getElementById('kmMax').textContent=Math.max(...kms).toFixed(0)+' km';
+    document.getElementById('kmMin').textContent=Math.min(...kms).toFixed(0)+' km';
+  }
+  // Alerts
+  const ab=document.getElementById('alertBox');
+  if(alerts.length){
+    ab.classList.add('show');
+    document.getElementById('alertList').innerHTML=alerts.map(v=>
+      `<div class="ab-row">🔴 <b>${v.plaka}</b> → ${v._prox.otel} (${v._prox.label})</div>`).join('');
+    alerts.forEach(v=>{
+      const k=v.plaka+v._prox.otel;
+      if(!prevAlerts.has(k)){
+        showNotif(`🚨 ${v.plaka} — ${v._prox.otel} yaklaşıyor!`,'n-alert');
+        try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();o.connect(c.destination);o.frequency.value=880;o.start();o.stop(c.currentTime+.15);}catch(e){}
+      }
+      prevAlerts.add(k);
+    });
+    const ck=new Set(alerts.map(v=>v.plaka+v._prox.otel));
+    for(const k of prevAlerts) if(!ck.has(k)) prevAlerts.delete(k);
+  } else { ab.classList.remove('show'); prevAlerts.clear(); }
+
+  renderList(list);
+  updateMarkers(list);
+}
+
+// ── LİSTE ─────────────────────────────────────
+function renderList(list){
+  const f=currentFilter==='all'?list:list.filter(v=>v._prox?.type===currentFilter||(currentFilter==='move'&&v._prox?.type==='near'));
+  document.getElementById('vehList').innerHTML=f.map(v=>{
+    const p=v._prox||{type:'idle',label:'—',distMagaza:0};
+    const sc={alert:'st-alert',near:'st-near',move:'st-move',idle:'st-idle'}[p.type];
+    const cc={alert:'v-alert',near:'v-near',move:'v-move',idle:'v-idle'}[p.type];
+    const sel=selectedPlaka===v.plaka?' selected':'';
+    const bar=Math.min(100,(v.hiz/120)*100);
+    const bc=p.type==='alert'?'#ff5f6e':p.type==='near'?'#f59e0b':'#35d979';
+    return `<div class="veh-card ${cc}${sel}" onclick="selectVeh('${v.plaka}')">
+      <div class="vc-top"><span>🚗</span><div class="vc-plaka">${v.plaka}</div><div class="vc-status ${sc}">${p.label}</div></div>
+      <div class="vc-info"><span>⚡ ${v.hiz.toFixed(0)} km/s</span><span>📏 ${(p.distMagaza||0).toFixed(1)} km</span>${v.km>0?`<span style="color:var(--blue)">🛣 ${v.km.toFixed(0)}km</span>`:''}</div>
+      ${p.otel&&p.otel!=='MAĞAZA'?`<div style="font-size:10px;color:var(--text2);margin-top:2px">📍 ${p.otel}</div>`:''}
+      <div class="vc-bar"><div class="vc-fill" style="width:${bar}%;background:${bc}"></div></div>
+    </div>`;
+  }).join('')||'<div style="text-align:center;padding:20px;color:var(--text2);font-size:12px">Bu filtrede araç yok</div>';
+}
+
+// ── MARKERLERİ GÜNCELLE ────────────────────────
+function updateMarkers(list){
+  list.forEach(v=>{
+    const p=v._prox||{type:'idle'};
+    const c={alert:'#ff5f6e',near:'#f59e0b',move:'#35d979',idle:'#9597a5'}[p.type];
+    const icon=L.divIcon({className:'',
+      html:`<div style="display:flex;flex-direction:column;align-items:center;gap:1px"><div style="background:#14161f;border:2px solid ${c};border-radius:5px;width:30px;height:22px;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.8)">🚗</div><div style="font-size:9px;color:${c};background:rgba(7,8,15,.85);padding:1px 4px;border-radius:3px;white-space:nowrap;font-weight:700">${v.plaka.split(' ').pop()}</div></div>`,
+      iconSize:[30,40],iconAnchor:[15,40]
+    });
+    if(markerMap[v.plaka]){markerMap[v.plaka].setLatLng([v.lat,v.lng]);markerMap[v.plaka].setIcon(icon);}
+    else{
+      const m=L.marker([v.lat,v.lng],{icon,zIndexOffset:200}).addTo(map);
+      m.bindPopup(()=>`<b style="color:#c9a84c">${v.plaka}</b><br>Hız: ${v.hiz.toFixed(0)} km/s<br>Mağaza: ${(v._prox?.distMagaza||0).toFixed(2)} km<br>Günlük: ${v.km.toFixed(0)} km`);
+      markerMap[v.plaka]=m;
+    }
+  });
+}
+
+// ── KONTROLLER ─────────────────────────────────
+function selectVeh(plaka){
+  selectedPlaka=selectedPlaka===plaka?null:plaka;
+  if(selectedPlaka&&vehicles[plaka]){
+    const v=vehicles[plaka];
+    map.setView([v.lat,v.lng],15);
+    if(markerMap[plaka]) markerMap[plaka].openPopup();
+  }
+  renderList(Object.values(vehicles));
+}
+function setFilter(btn,t){
+  currentFilter=t;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderList(Object.values(vehicles));
+}
+function refreshAll(){fetchVehicles();}
+function fitMap(){
+  const pts=Object.values(vehicles).filter(v=>v.lat&&v.lng).map(v=>[v.lat,v.lng]);
+  if(pts.length) map.fitBounds(pts,{padding:[40,40]});
+}
+function toggleAuto(){
+  autoRefresh=!autoRefresh;
+  const btn=document.getElementById('btnAuto');
+  if(autoRefresh){autoTimer=setInterval(fetchVehicles,15000);btn.textContent='⏱ Oto: Açık';btn.classList.add('active');}
+  else{clearInterval(autoTimer);btn.textContent='⏱ Oto: Kapalı';btn.classList.remove('active');}
+}
+
+// ── BİLDİRİM ──────────────────────────────────
+function showNotif(msg,cls='n-ok'){
+  const c=document.getElementById('notifContainer');
+  const el=document.createElement('div');
+  el.className=`notif-item ${cls}`;el.textContent=msg;
+  c.appendChild(el);setTimeout(()=>el.remove(),6000);
+}
+
+// ── FİREBASE ──────────────────────────────────
+function saveFirebase(){
+  if(!db) return;
+  const data={};
+  Object.values(vehicles).forEach(v=>{
+    const k=v.plaka.replace(/\s/g,'_');
+    data[k]={plaka:v.plaka,lat:v.lat,lng:v.lng,hiz:v.hiz,km:v.km,zaman:new Date().toISOString(),tip:v._prox?.type||'move',distMagaza:v._prox?.distMagaza||0};
+  });
+  db.ref('araclar').set(data).catch(e=>console.log('FB:',e));
+}
+
+// ── BAŞLAT ─────────────────────────────────────
+async function init(){
+  document.getElementById('loadingText').textContent='Harita yükleniyor...';
+  initMap();
+  if(FIREBASE_CONFIG.apiKey!=='FIREBASE_API_KEY_BURAYA'){
+    try{firebase.initializeApp(FIREBASE_CONFIG);db=firebase.database();}catch(e){console.log('FB:',e);}
+  }
+  document.getElementById('loadingText').textContent='TNB Mobil bağlanıyor...';
+  await fetchVehicles();
+  autoTimer=setInterval(fetchVehicles,15000);
+  document.getElementById('loadingOverlay').style.display='none';
+  showNotif('✅ Sistem aktif — 15 sn otomatik yenileme','n-ok');
+}
+window.addEventListener('load',init);
+</script>
+</body>
+</html>
