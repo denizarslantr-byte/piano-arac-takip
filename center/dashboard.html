@@ -36,6 +36,7 @@
   <meta name="apple-mobile-web-app-title" content="Piano Deri">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js")}</script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
 <div class="app">
@@ -82,6 +83,7 @@
       <button id="mnStaff"  class="btn-dark" onclick="showSection('staffSection','mnStaff')">👥 Personeller</button>
       <button id="mnOff"    class="btn-dark" onclick="showSection('offSection','mnOff')">🏖 İzin Girişi</button>
       <button id="mnPlaka"  class="btn-dark" onclick="showSection('plakaSection','mnPlaka')">🚗 Araçlar</button>
+      <button id="mnTakip"  class="btn-dark" onclick="showSection('takipSection','mnTakip');atInitMap()" style="border-color:rgba(53,217,121,.3);color:#35d979">📍 Araç Takip</button>
     </aside>
 
     <!-- Ana İçerik -->
@@ -201,6 +203,49 @@
         </div>
       </section>
 
+      <!-- ARAÇ TAKİP -->
+      <section id="takipSection" class="section">
+        <div class="panel-card" style="padding:0;overflow:hidden;height:calc(100vh - 130px)">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);flex-shrink:0">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span id="atLiveDot" style="width:8px;height:8px;border-radius:50%;background:var(--text2);display:inline-block"></span>
+              <h2 style="font-size:13px;margin:0;letter-spacing:.1em">📍 ARAÇ TAKİP — Kemer Bölgesi</h2>
+              <span id="atLastUpdate" style="font-size:10px;color:var(--text2)">—</span>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn-dark btn-sm" onclick="atCenterRefresh()">↺ Yenile</button>
+              <button class="btn-gold btn-sm" id="atCenterAutoBtn" onclick="atCenterToggleAuto()">⏱ Oto: Açık</button>
+              <button class="btn-dark btn-sm" onclick="atCenterFitMap()">⊡ Sığdır</button>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:256px 1fr;height:calc(100% - 44px)">
+            <!-- Sol panel -->
+            <div style="border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column">
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);flex-shrink:0">
+                <div style="background:var(--card);padding:6px 2px;text-align:center"><div id="atSMove" style="font-size:16px;font-weight:900;color:var(--green)">0</div><div style="font-size:8px;color:var(--text2)">HAREKET</div></div>
+                <div style="background:var(--card);padding:6px 2px;text-align:center"><div id="atSIdle" style="font-size:16px;font-weight:900;color:var(--text2)">0</div><div style="font-size:8px;color:var(--text2)">BEKLİYOR</div></div>
+                <div style="background:var(--card);padding:6px 2px;text-align:center"><div id="atSAlert" style="font-size:16px;font-weight:900;color:var(--red)">0</div><div style="font-size:8px;color:var(--text2)">UYARI</div></div>
+                <div style="background:var(--card);padding:6px 2px;text-align:center"><div id="atSTotal" style="font-size:16px;font-weight:900;color:var(--gold)">0</div><div style="font-size:8px;color:var(--text2)">TOPLAM</div></div>
+              </div>
+              <div id="atCenterAlertBox" style="display:none;margin:5px;background:rgba(255,95,110,.1);border:1px solid rgba(255,95,110,.3);border-radius:5px;padding:8px;flex-shrink:0">
+                <div style="font-size:11px;font-weight:700;color:var(--red);margin-bottom:4px">🚨 UYARI</div>
+                <div id="atCenterAlertList"></div>
+              </div>
+              <div id="atCenterVehPanel" style="padding:5px;flex:1;overflow-y:auto">
+                <div style="text-align:center;padding:20px;color:var(--text2);font-size:11px">Harita açılıyor...</div>
+              </div>
+              <div style="margin:5px;padding:8px;background:rgba(104,212,255,.06);border:1px solid rgba(104,212,255,.15);border-radius:5px;flex-shrink:0">
+                <div style="font-size:9px;letter-spacing:.3em;color:var(--blue);margin-bottom:4px">📏 GÜNLÜK KM</div>
+                <div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:var(--text2)">Toplam</span><span id="atKmTotal" style="font-weight:700">—</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:var(--text2)">Ort/araç</span><span id="atKmAvg" style="font-weight:700">—</span></div>
+              </div>
+            </div>
+            <!-- Harita -->
+            <div id="atCenterMap" style="width:100%;height:100%"></div>
+          </div>
+        </div>
+      </section>
+
     </main>
 
     <!-- Sağ Panel -->
@@ -274,7 +319,11 @@
 <script>
 // ── Kullanıcı Doğrulama ──
 (function(){
-  const u = JSON.parse(sessionStorage.getItem('pianoUser')||'null');
+  // DEMO: oturum yoksa otomatik giriş
+if (!sessionStorage.getItem('pianoUser')) {
+  sessionStorage.setItem('pianoUser', JSON.stringify({username:'merkez',role:'merkez',ad:'Demo Merkez',id:0}));
+}
+const u = JSON.parse(sessionStorage.getItem('pianoUser')||'null');
   if (!u || !['merkez','admin'].includes(u.role)) {
     sessionStorage.removeItem('pianoUser');
     window.location.replace('../giris/index.html');
@@ -1374,6 +1423,189 @@ document.addEventListener('click',  e => {
 setInterval(() => {
   if (!userActive) loadAll();
 }, 10000);
+</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ═══════════════════════════════════════════════
+// MERKEZ — ARAÇ TAKİP (piano-arac-takip Firebase)
+// ═══════════════════════════════════════════════
+const AT_CENTER_CONFIG = {
+  apiKey: "AIzaSyAkRsrIUiL-9-MT2LhAQUgZ8hF9MDXn9Nc",
+  authDomain: "piano-arac-takip.firebaseapp.com",
+  databaseURL: "https://piano-arac-takip-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "piano-arac-takip",
+  storageBucket: "piano-arac-takip.firebasestorage.app",
+  messagingSenderId: "967974089947",
+  appId: "1:967974089947:web:f86cb1ec99358cec5e88fe"
+};
+
+let _atCenterDb=null, _atCenterMap=null, _atCenterMarkers={}, _atCenterVehs={};
+let _atCenterTimer=null, _atCenterAuto=true, _atCenterPrevAlerts=new Set();
+let _atCenterOteller=[], _atCenterMerkez={lat:36.59555,lng:30.54664,r:1.0};
+let _atCenterInited=false;
+
+const TNB_CENTER={url:'https://ws.ats.tnbmobil.com.tr/webservis.asmx',firma:'3029',user:'kayaderiwb',pass:'1234'};
+
+function _atCenterGetDb(){
+  if(_atCenterDb) return _atCenterDb;
+  try{
+    const app=typeof firebase!=='undefined'&&(firebase.apps.find(a=>a.name==='arac-takip')||firebase.initializeApp(AT_CENTER_CONFIG,'arac-takip'));
+    _atCenterDb=app.database();
+  }catch(e){console.log('AT Center FB:',e);}
+  return _atCenterDb;
+}
+
+async function _atCenterDbGet(path){
+  const db=_atCenterGetDb();if(!db) return null;
+  const s=await db.ref(path).once('value');return s.val();
+}
+
+function atHaversine(la1,lo1,la2,lo2){
+  const R=6371,dL=(la2-la1)*Math.PI/180,dG=(lo2-lo1)*Math.PI/180;
+  const a=Math.sin(dL/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dG/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+async function atInitMap(){
+  if(_atCenterInited) return;
+  _atCenterInited=true;
+  setTimeout(async()=>{
+    _atCenterMap=L.map('atCenterMap',{center:[36.62,30.558],zoom:12});
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(_atCenterMap);
+
+    // Ayarları yükle
+    try{
+      const cfg=await _atCenterDbGet('ayarlar');
+      if(cfg){
+        if(cfg.magLat) _atCenterMerkez.lat=cfg.magLat;
+        if(cfg.magLng) _atCenterMerkez.lng=cfg.magLng;
+        if(cfg.magR)   _atCenterMerkez.r=cfg.magR;
+        if(cfg.tnbUser)  TNB_CENTER.user=cfg.tnbUser;
+        if(cfg.tnbPass)  TNB_CENTER.pass=cfg.tnbPass;
+        if(cfg.tnbFirma) TNB_CENTER.firma=cfg.tnbFirma;
+      }
+    }catch(e){}
+
+    // Mağaza marker
+    L.marker([_atCenterMerkez.lat,_atCenterMerkez.lng],{icon:L.divIcon({className:'',
+      html:'<div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div style="background:#c9a84c;border-radius:50% 50% 50% 0;width:26px;height:26px;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,.35);box-shadow:0 3px 10px rgba(201,168,76,.7)"><span style="transform:rotate(45deg);font-size:12px">🏪</span></div><div style="font-size:9px;color:#c9a84c;background:rgba(0,0,0,.7);padding:1px 4px;border-radius:2px;white-space:nowrap;font-weight:700">PIANO DERİ</div></div>',
+      iconSize:[80,44],iconAnchor:[40,40]
+    }),zIndexOffset:1000}).addTo(_atCenterMap);
+    L.circle([_atCenterMerkez.lat,_atCenterMerkez.lng],{radius:_atCenterMerkez.r*1000,color:'#ff5f6e',weight:1.5,fillColor:'#ff5f6e',fillOpacity:.05,dashArray:'8 6'}).addTo(_atCenterMap);
+
+    // Otelleri yükle
+    try{
+      const oteller=await _atCenterDbGet('oteller');
+      if(oteller){
+        _atCenterOteller=Object.values(oteller).filter(o=>o.lat&&o.lng);
+        _atCenterOteller.forEach(o=>{
+          L.marker([o.lat,o.lng],{icon:L.divIcon({className:'',
+            html:`<div style="background:rgba(15,16,23,.88);border:1px solid rgba(104,212,255,.5);border-radius:3px;padding:2px 5px;font-size:10px;color:#68d4ff;white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis">🏨 ${o.ad||''}</div>`,
+            iconSize:[155,18],iconAnchor:[0,9]
+          }),zIndexOffset:500}).addTo(_atCenterMap).bindPopup(`<b>${o.ad}</b>`);
+          L.circle([o.lat,o.lng],{radius:o.uyariM||300,color:'#68d4ff',weight:.8,fillColor:'#68d4ff',fillOpacity:.04,dashArray:'3 5'}).addTo(_atCenterMap);
+        });
+      }
+    }catch(e){}
+
+    atCenterFetch();
+    _atCenterTimer=setInterval(atCenterFetch,15000);
+  },150);
+}
+
+async function atCenterFetch(){
+  try{
+    const soap=`<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><wsGetLastLocations xmlns="http://tempuri.org/"><firmaKodu>${TNB_CENTER.firma}</firmaKodu><kullaniciAdi>${TNB_CENTER.user}</kullaniciAdi><sifre>${TNB_CENTER.pass}</sifre></wsGetLastLocations></soap:Body></soap:Envelope>`;
+    const r=await fetch(TNB_CENTER.url,{method:'POST',headers:{'Content-Type':'text/xml; charset=utf-8','SOAPAction':'http://tempuri.org/wsGetLastLocations'},body:soap});
+    const xml=await r.text();
+    const doc=new DOMParser().parseFromString(xml,'text/xml');
+    const items=doc.getElementsByTagName('VehicleInfo');
+    if(!items.length){atCenterDemoFetch();return;}
+    const nv={};
+    for(const item of items){
+      const p=item.getElementsByTagName('PlateNo')[0]?.textContent||item.getElementsByTagName('Plate')[0]?.textContent;
+      const lat=parseFloat(item.getElementsByTagName('Lat')[0]?.textContent||'0');
+      const lng=parseFloat(item.getElementsByTagName('Lng')[0]?.textContent||'0');
+      const hiz=parseFloat(item.getElementsByTagName('Speed')[0]?.textContent||'0');
+      if(!p||!lat||!lng) continue;
+      nv[p]={plaka:p,lat,lng,hiz,km:_atCenterVehs[p]?.km||0};
+    }
+    _atCenterVehs=nv;
+    atCenterUpdate();
+    document.getElementById('atLastUpdate').textContent='Son: '+new Date().toLocaleTimeString('tr-TR');
+    document.getElementById('atLiveDot').style.background='var(--green)';
+  }catch(e){atCenterDemoFetch();document.getElementById('atLiveDot').style.background='var(--warn)';}
+}
+
+function atCenterDemoFetch(){
+  const demo=[
+    {plaka:'07 ABC 946',lat:36.5980+Math.random()*.004,lng:30.5540+Math.random()*.004,hiz:42,km:87},
+    {plaka:'07 DEF 453',lat:36.6030+Math.random()*.004,lng:30.5430+Math.random()*.004,hiz:55,km:124},
+    {plaka:'07 GHI 2033',lat:36.6319+Math.random()*.004,lng:30.4992+Math.random()*.004,hiz:68,km:156},
+    {plaka:'07 JKL 1892',lat:_atCenterMerkez.lat+.001,lng:_atCenterMerkez.lng+.001,hiz:0,km:43},
+    {plaka:'07 MNO 2045',lat:36.6045+Math.random()*.004,lng:30.5762+Math.random()*.004,hiz:52,km:98},
+  ];
+  demo.forEach(v=>{_atCenterVehs[v.plaka]=v;});
+  atCenterUpdate();
+  document.getElementById('atLastUpdate').textContent='Demo: '+new Date().toLocaleTimeString('tr-TR');
+}
+
+function atCenterCheckProx(v){
+  const dm=atHaversine(v.lat,v.lng,_atCenterMerkez.lat,_atCenterMerkez.lng);
+  if(dm<=_atCenterMerkez.r) return{type:'alert',label:`⚠️ ${(dm*1000).toFixed(0)}m`,otel:'MAĞAZA',dm};
+  for(const o of _atCenterOteller){
+    const d=atHaversine(v.lat,v.lng,o.lat,o.lng);
+    if(d*1000<=(o.uyariM||300)) return{type:'alert',label:'⚠️ OTELDE',otel:o.ad,dm};
+    if(d*1000<=(o.uyariM||300)*3) return{type:'near',label:`${(d*1000).toFixed(0)}m`,otel:o.ad,dm};
+  }
+  return{type:v.hiz<2?'idle':'move',label:v.hiz<2?'Bekliyor':'Hareket',otel:null,dm};
+}
+
+function atCenterUpdate(){
+  const list=Object.values(_atCenterVehs);
+  let cM=0,cI=0,cA=0,alerts=[];
+  list.forEach(v=>{v._p=atCenterCheckProx(v);if(v._p.type==='alert')cA++;else if(v._p.type==='idle')cI++;else cM++;if(v._p.type==='alert')alerts.push(v);});
+  document.getElementById('atSMove').textContent=cM;
+  document.getElementById('atSIdle').textContent=cI;
+  document.getElementById('atSAlert').textContent=cA;
+  document.getElementById('atSTotal').textContent=list.length;
+  const kms=list.map(v=>v.km).filter(k=>k>0);
+  if(kms.length){const t=kms.reduce((s,k)=>s+k,0);document.getElementById('atKmTotal').textContent=t.toFixed(0)+' km';document.getElementById('atKmAvg').textContent=(t/list.length).toFixed(0)+' km';}
+  // Alerts
+  const ab=document.getElementById('atCenterAlertBox');
+  if(alerts.length){
+    ab.style.display='block';
+    document.getElementById('atCenterAlertList').innerHTML=alerts.map(v=>`<div style="font-size:11px;padding:2px 0">🔴 <b>${v.plaka}</b> → ${v._p.otel} (${v._p.label})</div>`).join('');
+    alerts.forEach(v=>{const k=v.plaka+v._p.otel;if(!_atCenterPrevAlerts.has(k)){showToast(`🚨 ${v.plaka} — ${v._p.otel} yaklaşıyor!`,'warn');try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();o.connect(c.destination);o.frequency.value=880;o.start();o.stop(c.currentTime+.15);}catch(e){}}_atCenterPrevAlerts.add(k);});
+    const ck=new Set(alerts.map(v=>v.plaka+v._p.otel));for(const k of _atCenterPrevAlerts)if(!ck.has(k))_atCenterPrevAlerts.delete(k);
+  }else{ab.style.display='none';_atCenterPrevAlerts.clear();}
+  // Vehicle list
+  document.getElementById('atCenterVehPanel').innerHTML=list.map(v=>{
+    const p=v._p;const c={alert:'#ff5f6e',near:'#f59e0b',move:'#35d979',idle:'#9597a5'}[p.type];
+    return `<div style="background:var(--bg2);border-left:3px solid ${c};border-radius:4px;padding:6px 8px;margin-bottom:3px;cursor:pointer" onclick="atCenterSelectVeh('${v.plaka}')">
+      <div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="font-size:11px;font-weight:700">${v.plaka}</span><span style="font-size:10px;font-weight:700;color:${c}">${p.label}</span></div>
+      <div style="font-size:10px;color:var(--text2)">⚡ ${v.hiz.toFixed(0)} km/s &nbsp; 📏 ${p.dm.toFixed(1)} km${v.km>0?` &nbsp; 🛣 ${v.km.toFixed(0)}km`:''}</div>
+      ${p.otel&&p.otel!=='MAĞAZA'?`<div style="font-size:10px;color:var(--text2)">📍 ${p.otel}</div>`:''}
+    </div>`;
+  }).join('');
+  // Map markers
+  if(_atCenterMap) list.forEach(v=>{
+    const c={alert:'#ff5f6e',near:'#f59e0b',move:'#35d979',idle:'#9597a5'}[v._p.type];
+    const icon=L.divIcon({className:'',html:`<div style="display:flex;flex-direction:column;align-items:center;gap:1px"><div style="background:#fff;border:2px solid ${c};border-radius:4px;width:28px;height:20px;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,.3)">🚗</div><div style="font-size:9px;color:${c};background:rgba(0,0,0,.65);padding:1px 3px;border-radius:2px;font-weight:700;white-space:nowrap">${v.plaka.split(' ').pop()}</div></div>`,iconSize:[28,36],iconAnchor:[14,36]});
+    if(_atCenterMarkers[v.plaka]){_atCenterMarkers[v.plaka].setLatLng([v.lat,v.lng]);_atCenterMarkers[v.plaka].setIcon(icon);}
+    else{const m=L.marker([v.lat,v.lng],{icon,zIndexOffset:200}).addTo(_atCenterMap);m.bindPopup(`<b>${v.plaka}</b><br>${v.hiz.toFixed(0)} km/s · ${v._p.dm.toFixed(2)} km`);_atCenterMarkers[v.plaka]=m;}
+  });
+}
+
+function atCenterSelectVeh(plaka){const v=_atCenterVehs[plaka];if(v&&_atCenterMap){_atCenterMap.setView([v.lat,v.lng],15);if(_atCenterMarkers[plaka])_atCenterMarkers[plaka].openPopup();}}
+function atCenterRefresh(){atCenterFetch();}
+function atCenterFitMap(){const pts=Object.values(_atCenterVehs).filter(v=>v.lat&&v.lng).map(v=>[v.lat,v.lng]);if(pts.length&&_atCenterMap)_atCenterMap.fitBounds(pts,{padding:[30,30]});}
+function atCenterToggleAuto(){
+  _atCenterAuto=!_atCenterAuto;
+  const btn=document.getElementById('atCenterAutoBtn');
+  if(_atCenterAuto){_atCenterTimer=setInterval(atCenterFetch,15000);btn.textContent='⏱ Oto: Açık';}
+  else{clearInterval(_atCenterTimer);btn.textContent='⏱ Oto: Kapalı';}
+}
 </script>
 </body>
 </html>

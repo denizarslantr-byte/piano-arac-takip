@@ -81,7 +81,24 @@ async function doLogin() {
   const loadEl   = document.getElementById('loadMsg');
 
   errEl.innerText = '';
-  if (!username || !password) { errEl.innerText = 'Kullanıcı adı ve şifre girin.'; return; }
+  if (!username) { errEl.innerText = 'Kullanıcı adı girin.'; return; }
+
+  // ── DEMO BYPASS ─────────────────────────────
+  const DEMO_USERS = {
+    'admin':  { role:'admin',   ad:'Admin' },
+    'merkez': { role:'merkez',  ad:'Merkez' },
+    'patron': { role:'patron',  ad:'Patron' },
+    'otel':   { role:'hotel',   ad:'Otel' },
+  };
+  if (DEMO_USERS[username.toLowerCase()]) {
+    const u = DEMO_USERS[username.toLowerCase()];
+    sessionStorage.setItem('pianoUser', JSON.stringify({ username, role: u.role, ad: u.ad, id: Date.now() }));
+    redirectUser(u.role);
+    return;
+  }
+  // ─────────────────────────────────────────────
+
+  if (!password) { errEl.innerText = 'Şifre girin.'; return; }
 
   loadEl.style.display = 'block';
 

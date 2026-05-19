@@ -75,6 +75,7 @@
       <button id="tab6" class="tab-btn"        onclick="openTab(6)" style="background:linear-gradient(135deg,rgba(160,120,48,.4),rgba(241,212,138,.15));border-color:var(--gold)">📥 Admin Raporları</button>
       <button id="tab7" class="tab-btn"        onclick="openTab(7);loadUsers()">👤 Kullanıcılar</button>
       <button id="tab8" class="tab-btn"        onclick="openTab(8)">📥 İçe Aktar</button>
+      <button id="tab9" class="tab-btn" onclick="openTab(9);atLoadAll()" style="background:linear-gradient(135deg,rgba(53,217,121,.15),rgba(53,217,121,.05));border-color:rgba(53,217,121,.4);color:#35d979">🚗 Araç Takip</button>
     </div>
 
     <!-- TAB 1: Oteller -->
@@ -294,6 +295,80 @@
       </div>
     </div>
 
+    <!-- TAB 9: ARAÇ TAKİP -->
+    <div id="tabContent9" style="display:none">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+
+        <!-- Merkez Mağaza -->
+        <div class="panel-card">
+          <h3 style="color:var(--gold2);margin-top:0;font-size:14px">🏪 Merkez Mağaza Koordinatı</h3>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div style="flex:1"><label style="font-size:10px;letter-spacing:.2em;color:var(--text2)">ENLEM (LAT)</label>
+              <input id="atMagLat" class="inp" value="36.59555186452578" style="width:100%"></div>
+            <div style="flex:1"><label style="font-size:10px;letter-spacing:.2em;color:var(--text2)">BOYLAM (LNG)</label>
+              <input id="atMagLng" class="inp" value="30.54664261177073" style="width:100%"></div>
+            <div style="width:80px"><label style="font-size:10px;letter-spacing:.2em;color:var(--text2)">UYARI (km)</label>
+              <input id="atMagR" class="inp" value="1.0" type="number" step="0.1" style="width:100%"></div>
+          </div>
+          <button class="btn-gold btn-sm" onclick="atSaveMerkez()">💾 Merkez Kaydet</button>
+        </div>
+
+        <!-- Uyarı & TNB Ayarları -->
+        <div class="panel-card">
+          <h3 style="color:var(--gold2);margin-top:0;font-size:14px">⚙️ Sistem Ayarları</h3>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div style="flex:1"><label style="font-size:10px;letter-spacing:.2em;color:var(--text2)">TNB KULLANICI</label>
+              <input id="atTnbUser" class="inp" value="kayaderiwb" style="width:100%"></div>
+            <div style="flex:1"><label style="font-size:10px;letter-spacing:.2em;color:var(--text2)">TNB ŞİFRE</label>
+              <input id="atTnbPass" class="inp" value="1234" style="width:100%"></div>
+            <div style="flex:1"><label style="font-size:10px;letter-spacing:.2em;color:var(--text2)">FİRMA KODU</label>
+              <input id="atTnbFirma" class="inp" value="3029" style="width:100%"></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div style="flex:1"><label style="font-size:10px;letter-spacing:.2em;color:var(--text2)">YENİLEME (sn)</label>
+              <input id="atInterval" class="inp" value="15" type="number" style="width:100%"></div>
+            <div style="flex:1"><label style="font-size:10px;letter-spacing:.2em;color:var(--text2)">OTEL UYARI (m)</label>
+              <input id="atOtelUyariM" class="inp" value="300" type="number" style="width:100%"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-gold btn-sm" onclick="atSaveConfig()">💾 Kaydet</button>
+            <button class="btn-dark btn-sm" onclick="atTestTnb()">🔌 TNB Test</button>
+          </div>
+          <div id="atTestResult" style="font-size:11px;color:var(--text2);margin-top:6px;min-height:16px"></div>
+        </div>
+      </div>
+
+      <!-- Otel Koordinatları -->
+      <div class="panel-card" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <h3 style="color:var(--blue);margin:0;font-size:14px">🏨 Otel Koordinatları</h3>
+          <div style="display:flex;gap:8px">
+            <span style="font-size:11px;color:var(--text2);align-self:center">Google Maps → sağ tık → koordinatı kopyala</span>
+            <button class="btn-dark btn-sm" onclick="atLoadHotels()">↺ Yenile</button>
+          </div>
+        </div>
+        <div id="atHotelList"><div style="text-align:center;padding:16px;color:var(--text2)">Yükleniyor...</div></div>
+      </div>
+
+      <!-- Araç Yönetimi -->
+      <div class="panel-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <h3 style="color:var(--green);margin:0;font-size:14px">🚗 Araç Yönetimi</h3>
+          <button class="btn-dark btn-sm" onclick="atFetchTnbVehicles()">📡 TNB'den Çek</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+          <input id="atNewPlaka"  class="inp" placeholder="Plaka (07 ABC 946)" style="flex:1;min-width:130px">
+          <input id="atNewSurucu" class="inp" placeholder="Sürücü adı"          style="flex:1;min-width:120px">
+          <input id="atNewTip"    class="inp" placeholder="Tip (Minibüs)"        style="flex:1;min-width:100px">
+          <input id="atNewTel"    class="inp" placeholder="Telefon"              style="flex:1;min-width:110px">
+          <button class="btn-gold" onclick="atAddVehicle()">+ Ekle</button>
+        </div>
+        <div id="atVehicleList"><div style="text-align:center;padding:12px;color:var(--text2);font-size:12px">Araç eklenmedi</div></div>
+      </div>
+
+    </div>
+
   </section>
 </div>
 
@@ -328,7 +403,11 @@
 showApiWarning();
 // ── Kullanıcı Doğrulama ──
 (function(){
-  const u = JSON.parse(sessionStorage.getItem('pianoUser')||'null');
+  // DEMO: oturum yoksa otomatik giriş
+if (!sessionStorage.getItem('pianoUser')) {
+  sessionStorage.setItem('pianoUser', JSON.stringify({username:'admin',role:'admin',ad:'Demo Admin',id:0}));
+}
+const u = JSON.parse(sessionStorage.getItem('pianoUser')||'null');
   if (!u || u.role !== 'admin') {
     sessionStorage.removeItem('pianoUser');
     window.location.replace('../giris/index.html');
@@ -359,7 +438,7 @@ function openAdmin() {
 
 // ── Tab ────────────────────────────────────────────────────────
 function openTab(n) {
-  [1,2,3,4,5,6,7,8].forEach(i => {
+  [1,2,3,4,5,6,7,8,9].forEach(i => {
     document.getElementById("tabContent"+i).style.display = i===n?"block":"none";
     document.getElementById("tab"+i).classList.toggle("active", i===n);
   });
@@ -1088,6 +1167,198 @@ window.addEventListener("DOMContentLoaded",()=>{
     document.getElementById("r6End").value   = todayStr();
   }
 });
+
+// ═══════════════════════════════════════════════
+// ARAÇ TAKİP — Ayrı Firebase (piano-arac-takip)
+// ═══════════════════════════════════════════════
+const AT_FB_CONFIG = {
+  apiKey: "AIzaSyAkRsrIUiL-9-MT2LhAQUgZ8hF9MDXn9Nc",
+  authDomain: "piano-arac-takip.firebaseapp.com",
+  databaseURL: "https://piano-arac-takip-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "piano-arac-takip",
+  storageBucket: "piano-arac-takip.firebasestorage.app",
+  messagingSenderId: "967974089947",
+  appId: "1:967974089947:web:f86cb1ec99358cec5e88fe"
+};
+
+let _atFbApp = null;
+let _atDb    = null;
+let _atConfig = {};
+let _atHotelCoords = {};
+
+function getAtDb() {
+  if (_atDb) return _atDb;
+  try {
+    _atFbApp = firebase.apps.find(a=>a.name==='arac-takip') ||
+               firebase.initializeApp(AT_FB_CONFIG, 'arac-takip');
+    _atDb = _atFbApp.database();
+  } catch(e) { console.error('AT Firebase:', e); }
+  return _atDb;
+}
+
+async function atDbGet(path) {
+  const db = getAtDb(); if (!db) return null;
+  const snap = await db.ref(path).once('value');
+  return snap.val();
+}
+async function atDbSet(path, val) {
+  const db = getAtDb(); if (!db) return;
+  await db.ref(path).set(val);
+}
+async function atDbRemove(path) {
+  const db = getAtDb(); if (!db) return;
+  await db.ref(path).remove();
+}
+
+// ── YÜKLE ──────────────────────────────────────
+async function atLoadAll() {
+  try { _atConfig = await atDbGet('ayarlar') || {}; } catch(e) {}
+  if (_atConfig.magLat) document.getElementById('atMagLat').value = _atConfig.magLat;
+  if (_atConfig.magLng) document.getElementById('atMagLng').value = _atConfig.magLng;
+  if (_atConfig.magR)   document.getElementById('atMagR').value   = _atConfig.magR;
+  if (_atConfig.tnbUser)  document.getElementById('atTnbUser').value  = _atConfig.tnbUser;
+  if (_atConfig.tnbPass)  document.getElementById('atTnbPass').value  = _atConfig.tnbPass;
+  if (_atConfig.tnbFirma) document.getElementById('atTnbFirma').value = _atConfig.tnbFirma;
+  if (_atConfig.interval) document.getElementById('atInterval').value = _atConfig.interval;
+  if (_atConfig.otelUyariM) document.getElementById('atOtelUyariM').value = _atConfig.otelUyariM;
+  atLoadHotels();
+  atLoadVehicles();
+}
+
+// ── MERKEZ KAYDET ──────────────────────────────
+async function atSaveMerkez() {
+  const upd = {
+    magLat: parseFloat(document.getElementById('atMagLat').value)||36.59555,
+    magLng: parseFloat(document.getElementById('atMagLng').value)||30.54664,
+    magR:   parseFloat(document.getElementById('atMagR').value)||1.0,
+  };
+  _atConfig = {..._atConfig, ...upd};
+  await atDbSet('ayarlar', _atConfig);
+  showToast('✅ Merkez koordinatı kaydedildi');
+}
+
+// ── AYAR KAYDET ────────────────────────────────
+async function atSaveConfig() {
+  const upd = {
+    tnbUser:   document.getElementById('atTnbUser').value.trim(),
+    tnbPass:   document.getElementById('atTnbPass').value.trim(),
+    tnbFirma:  document.getElementById('atTnbFirma').value.trim(),
+    interval:  Number(document.getElementById('atInterval').value)||15,
+    otelUyariM:Number(document.getElementById('atOtelUyariM').value)||300,
+  };
+  _atConfig = {..._atConfig, ...upd};
+  await atDbSet('ayarlar', _atConfig);
+  showToast('✅ Ayarlar kaydedildi');
+}
+
+// ── OTEL KOORDİNATLARI ─────────────────────────
+function _atKey(name){ return name.replace(/[^a-zA-Z0-9]/g,'_').substring(0,50); }
+
+async function atLoadHotels() {
+  const hotels = await getHotels();  // PD-SİSTEM'deki otel listesi
+  try { _atHotelCoords = await atDbGet('oteller') || {}; } catch(e){ _atHotelCoords={}; }
+  const el = document.getElementById('atHotelList');
+  if (!hotels||!hotels.length){ el.innerHTML='<div style="padding:12px;color:var(--text2)">Otel bulunamadı</div>'; return; }
+  el.innerHTML = hotels.map(h=>{
+    const key = _atKey(h.name||h.hotel||'');
+    const coord = _atHotelCoords[key]||{};
+    const ok = coord.lat && coord.lng;
+    return `<div style="display:grid;grid-template-columns:1fr 150px 150px 80px;gap:6px;align-items:center;padding:7px 8px;margin-bottom:4px;background:var(--bg2);border-radius:5px;border-left:3px solid ${ok?'var(--green)':'rgba(255,95,110,.4)'}">
+      <div style="font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${h.name||h.hotel}">${h.name||h.hotel}</div>
+      <input id="atLat_${key}" class="inp" placeholder="LAT" value="${coord.lat||''}" style="font-size:11px">
+      <input id="atLng_${key}" class="inp" placeholder="LNG" value="${coord.lng||''}" style="font-size:11px">
+      <button class="btn-dark btn-sm" onclick="atSaveHotelCoord('${(h.name||h.hotel).replace(/'/g,"\'")}','${key}')" style="font-size:10px;border-color:${ok?'var(--green)':'var(--border)'}">${ok?'✅':'💾'}</button>
+    </div>`;
+  }).join('');
+}
+
+async function atSaveHotelCoord(hotelName, key) {
+  const lat = parseFloat(document.getElementById(`atLat_${key}`)?.value);
+  const lng = parseFloat(document.getElementById(`atLng_${key}`)?.value);
+  if (!lat||!lng){ showToast('LAT ve LNG girin!','err'); return; }
+  const uyariM = Number(document.getElementById('atOtelUyariM')?.value)||300;
+  await atDbSet(`oteller/${key}`, {ad:hotelName, lat, lng, uyariM});
+  _atHotelCoords[key]={lat,lng,uyariM};
+  showToast(`✅ ${hotelName} koordinatı kaydedildi`);
+  atLoadHotels();
+}
+
+// ── ARAÇ YÖNETİMİ ─────────────────────────────
+async function atLoadVehicles() {
+  const el = document.getElementById('atVehicleList');
+  if (!el) return;
+  try {
+    const data = await atDbGet('araclar_tanim')||{};
+    const list = Object.entries(data);
+    if (!list.length){ el.innerHTML='<div style="text-align:center;padding:12px;color:var(--text2);font-size:12px">Henüz araç eklenmedi</div>'; return; }
+    el.innerHTML = list.map(([key,v])=>`
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:6px;align-items:center;padding:7px 8px;background:var(--bg2);border-radius:5px;border-left:2px solid var(--green);margin-bottom:4px">
+        <span style="font-size:12px;font-weight:700">🚗 ${v.plaka||'—'}</span>
+        <span style="font-size:11px;color:var(--text2)">${v.surucu||'—'}</span>
+        <span style="font-size:11px;color:var(--text2)">${v.tip||'—'}</span>
+        <span style="font-size:11px;color:var(--text2)">${v.tel||'—'}</span>
+        <button class="btn-red btn-sm" onclick="atDeleteVehicle('${key}')" style="font-size:10px">🗑</button>
+      </div>`).join('');
+  } catch(e){ el.innerHTML='<div style="color:var(--red);font-size:12px;padding:8px">Hata: '+e.message+'</div>'; }
+}
+
+async function atAddVehicle() {
+  const plaka  = document.getElementById('atNewPlaka')?.value.trim().toUpperCase();
+  const surucu = document.getElementById('atNewSurucu')?.value.trim();
+  const tip    = document.getElementById('atNewTip')?.value.trim()||'Minibüs';
+  const tel    = document.getElementById('atNewTel')?.value.trim();
+  if (!plaka){ showToast('Plaka girin!','err'); return; }
+  const key = plaka.replace(/\s/g,'_');
+  await atDbSet(`araclar_tanim/${key}`, {plaka, surucu, tip, tel, eklendi:new Date().toISOString()});
+  ['atNewPlaka','atNewSurucu','atNewTel'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  showToast(`✅ ${plaka} eklendi`);
+  atLoadVehicles();
+}
+
+async function atDeleteVehicle(key) {
+  if (!confirm('Bu araç silinsin mi?')) return;
+  await atDbRemove(`araclar_tanim/${key}`);
+  showToast('Araç silindi');
+  atLoadVehicles();
+}
+
+// ── TNB TEST ───────────────────────────────────
+async function atTestTnb() {
+  const res = document.getElementById('atTestResult');
+  res.textContent = 'Bağlanıyor...'; res.style.color='var(--text2)';
+  try {
+    const firma = document.getElementById('atTnbFirma').value||'3029';
+    const user  = document.getElementById('atTnbUser').value||'kayaderiwb';
+    const pass  = document.getElementById('atTnbPass').value||'1234';
+    const soap = `<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><wsGetAllVehicles xmlns="http://tempuri.org/"><firmaKodu>${firma}</firmaKodu><kullaniciAdi>${user}</kullaniciAdi><sifre>${pass}</sifre></wsGetAllVehicles></soap:Body></soap:Envelope>`;
+    const r = await fetch('https://ws.ats.tnbmobil.com.tr/webservis.asmx',{method:'POST',headers:{'Content-Type':'text/xml; charset=utf-8','SOAPAction':'http://tempuri.org/wsGetAllVehicles'},body:soap});
+    const txt = await r.text();
+    const cnt = (txt.match(/PlateNo|Plate/gi)||[]).length;
+    res.textContent = cnt>0 ? `✅ Bağlandı! ${Math.floor(cnt/2)} araç` : '⚠️ Bağlandı ama araç yok';
+    res.style.color = cnt>0 ? 'var(--green)' : 'var(--warn)';
+  } catch(e){ res.textContent='❌ '+e.message; res.style.color='var(--red)'; }
+}
+
+async function atFetchTnbVehicles() {
+  const el = document.getElementById('atVehicleList');
+  el.innerHTML='<div style="padding:12px;color:var(--text2)">TNB'den çekiliyor...</div>';
+  try {
+    const firma=document.getElementById('atTnbFirma').value||'3029';
+    const user=document.getElementById('atTnbUser').value||'kayaderiwb';
+    const pass=document.getElementById('atTnbPass').value||'1234';
+    const soap=`<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><wsGetAllVehicles xmlns="http://tempuri.org/"><firmaKodu>${firma}</firmaKodu><kullaniciAdi>${user}</kullaniciAdi><sifre>${pass}</sifre></wsGetAllVehicles></soap:Body></soap:Envelope>`;
+    const r=await fetch('https://ws.ats.tnbmobil.com.tr/webservis.asmx',{method:'POST',headers:{'Content-Type':'text/xml; charset=utf-8','SOAPAction':'http://tempuri.org/wsGetAllVehicles'},body:soap});
+    const xml=await r.text();
+    const doc=new DOMParser().parseFromString(xml,'text/xml');
+    const items=doc.getElementsByTagName('VehicleInfo');
+    if (!items.length){ el.innerHTML='<div style="padding:12px;color:var(--warn)">Araç bulunamadı (CORS sorunu olabilir)</div>'; return; }
+    const plates=[];
+    for(const item of items){ const p=item.getElementsByTagName('PlateNo')[0]?.textContent||item.getElementsByTagName('Plate')[0]?.textContent; if(p) plates.push(p); }
+    el.innerHTML=plates.map(p=>`<div style="padding:6px 10px;background:var(--bg2);border-radius:4px;border-left:2px solid var(--green);margin-bottom:3px;font-size:12px;font-weight:700">🚗 ${p}</div>`).join('');
+    showToast(`✅ ${plates.length} araç bulundu`);
+  } catch(e){ el.innerHTML=`<div style="color:var(--red);font-size:12px;padding:8px">❌ ${e.message}</div>`; }
+}
+
 </script>
 </body>
 </html>
