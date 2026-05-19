@@ -31,6 +31,21 @@
   <meta name="apple-mobile-web-app-title" content="Piano Deri">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js")}</script>
+
+  <script>
+    // Standalone openTab - runs before any external scripts load
+    function openTab(n) {
+      try {
+        for (var i = 1; i <= 9; i++) {
+          var tc = document.getElementById("tabContent" + i);
+          var tb = document.getElementById("tab" + i);
+          if (tc) tc.style.display = (i === n) ? "block" : "none";
+          if (tb) tb.classList.toggle("active", i === n);
+        }
+        if (n === 2 && typeof loadAdminRapor === "function") loadAdminRapor();
+      } catch(e) { console.warn("openTab error:", e); }
+    }
+  </script>
 </head>
 <body>
 <div class="app">
@@ -546,8 +561,10 @@ async function deleteHotelUI(id, name) {
 // ── Tab ────────────────────────────────────────────────────────
 function openTab(n) {
   [1,2,3,4,5,6,7,8,9].forEach(i => {
-    document.getElementById("tabContent"+i).style.display = i===n?"block":"none";
-    document.getElementById("tab"+i).classList.toggle("active", i===n);
+    const tc = document.getElementById("tabContent"+i);
+    const tb = document.getElementById("tab"+i);
+    if (tc) tc.style.display = i===n?"block":"none";
+    if (tb) tb.classList.toggle("active", i===n);
   });
   if (n===2) loadAdminRapor();
 }
