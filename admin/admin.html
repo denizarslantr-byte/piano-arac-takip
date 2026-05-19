@@ -413,12 +413,14 @@ function logout(){ window.location.reload(); }
 let logsCache = [], hotelsData = [], adminRaporData = null, adminPerfData = null;
 
 // ── Giriş (artık pianoUser ile otomatik açılır) ──────────────
-window.addEventListener("DOMContentLoaded", () => {
-  const u = window._pianoUser;
-  const lbl = document.getElementById('adminUserLabel');
-  if (lbl && u) lbl.innerText = '👤 Admin';
-  loadHotels();
-});
+// Direct call (scripts at bottom of body, DOMContentLoaded already fired)
+(function initAdmin() {
+  try {
+    const lbl = document.getElementById('adminUserLabel');
+    if (lbl) lbl.innerText = '👤 Admin';
+    loadHotels().catch(e => console.warn('loadHotels error:', e));
+  } catch(e) { console.warn('initAdmin error:', e); }
+})();
 
 function adminLogin() {} // Geriye dönük uyumluluk
 function adminLogout() { logout(); }
@@ -438,11 +440,11 @@ async function loadHotels() {
       tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text2)">Henüz otel eklenmedi.</td></tr>';
       return;
     }
-    tbody.innerHTML = hotelsData.map(h => {
+    tbody.innerHTML = hotelsData.map((h, idx) => {
       const hasCoord = h.lat && h.lng;
       const coordBadge = hasCoord
         ? `<span style="color:#4ade80;font-size:11px">✅ ${parseFloat(h.lat).toFixed(4)}, ${parseFloat(h.lng).toFixed(4)}</span>`
-        : `<span style="color:rgba(255,95,110,.7);font-size:11px">❌ Koordinat yok</span>`;
+        : `<span style="color:rgba(255,95,110,.7);font-size:11px">❌ Yok</span>`;
       return `<tr>
         <td><b>${h.hotel||''}</b></td>
         <td><code style="color:var(--gold)">${h.code||''}</code></td>
@@ -452,7 +454,7 @@ async function loadHotels() {
         <td><span class="badge ${h.status==='ACTIVE'?'exited':'cancelled'}">${h.status==='ACTIVE'?'AKTİF':'PASİF'}</span></td>
         <td>
           <div style="display:flex;gap:4px;flex-wrap:wrap">
-            <button class="btn-blue btn-sm" onclick="openEditHotel(${JSON.stringify(h).replace(/"/g,"&quot;")})">✏️</button>
+            <button class="btn-blue btn-sm" onclick="openEditHotel(${idx})">✏️</button>
             <button class="btn-red btn-sm" onclick="deleteHotelUI('${h.id||h._key}','${h.hotel}')">🗑</button>
           </div>
         </td>
@@ -495,7 +497,9 @@ async function saveHotel() {
   await loadHotels();
 }
 
-function openEditHotel(h) {
+function openEditHotel(idx) {
+  const h = hotelsData[idx];
+  if (!h) return;
   document.getElementById('editHotelId').value    = h.id || h._key || '';
   document.getElementById('editHotelName').value  = h.hotel  || '';
   document.getElementById('editHotelCode').value  = h.code   || '';
@@ -783,6 +787,10 @@ function downloadHotelTemplate() {
   XLSX.writeFile(wb, "otel-aktarim-sablonu.xlsx");
 }
 
+function closeModal() {
+  const m = document.getElementById('editModal');
+  if (m) m.style.display = 'none';
+}
 editModal.addEventListener("click", e => { if (e.target===editModal) closeModal(); });
 
 // ── Admin Raporlar ─────────────────────────────────────────────
@@ -1263,14 +1271,17 @@ async function deleteUserUI(id, username) {
 }
 
 // ── Rapor tab init
-window.addEventListener("DOMContentLoaded",()=>{
-  aRStart.value = weekStart(todayStr());
-  aREnd.value   = todayStr();
-  if (document.getElementById("r6Start")) {
-    document.getElementById("r6Start").value = weekStart(todayStr());
-    document.getElementById("r6End").value   = todayStr();
-  }
-});
+// Date picker init - direct call
+(function initDates() {
+  const el1 = document.getElementById("aRStart");
+  const el2 = document.getElementById("aREnd");
+  if (el1) el1.value = weekStart(todayStr());
+  if (el2) el2.value = todayStr();
+  const r6s = document.getElementById("r6Start");
+  const r6e = document.getElementById("r6End");
+  if (r6s) r6s.value = weekStart(todayStr());
+  if (r6e) r6e.value = todayStr();
+})();
 
 // ═══════════════════════════════════════════════
 // ARAÇ TAKİP — Ayrı Firebase (piano-arac-takip)
@@ -1388,6 +1399,23 @@ async function atSaveHotelCoord(hotelName, key) {
 }
 
 // ── ARAÇ YÖNETİMİ ─────────────────────────────
+async function atAddVehicle() {
+  const kisaPlaka = document.getElementById('atNewKisaPlaka')?.value.trim().toUpperCase();
+  const tnbPlaka  = document.getElementById('atNewTnbPlaka')?.value.trim().toUpperCase();
+  const surucu    = document.getElementById('atNewSurucu')?.value.trim();
+  const tip       = document.getElementById('atNewTip')?.value.trim() || 'Minibüs';
+  if (!kisaPlaka) { showToast('Kısa plaka girin!','err'); return; }
+  if (!tnbPlaka)  { showToast('TNB plakası girin!','err'); return; }
+  const key = tnbPlaka.replace(/\s/g,'_');
+  await atDbSet(`araclar_tanim/${key}`, { plaka: tnbPlaka, kisaPlaka, tnbPlaka, surucu, tip, eklendi: new Date().toISOString() });
+  await addPlaka(kisaPlaka, tip, tnbPlaka);
+  ['atNewKisaPlaka','atNewTnbPlaka','atNewSurucu','atNewTip'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  showToast(`✅ ${kisaPlaka} → ${tnbPlaka} eklendi`);
+  atLoadVehicles();
+}
+
 async function atLoadVehicles() {
   const el = document.getElementById('atVehicleList');
   if (!el) return;

@@ -55,12 +55,12 @@ async function setPin(newPin) {
 }
 
 // ── Rezervasyonlar ────────────────────────────────────────────
-async function getReservations(date) {
+async function getReservations(date, source) {
   const data = await fbGet("rezervasyonlar");
   if (!data) return [];
   return Object.entries(data)
     .map(([key, val]) => ({ ...val, _key: key }))
-    .filter(r => !date || r.date === date)
+    .filter(r => (!date || r.date === date) && (!source || r.source === source))
     .sort((a, b) => String(a.time).localeCompare(String(b.time)));
 }
 
@@ -190,6 +190,17 @@ async function addPlaka(plaka, model) {
 
 async function deletePlaka(id) {
   await fbRemove(`plakalar/${id}`);
+}
+
+// kısa plaka → TNB plaka eşlemesi
+async function getPlakaTnbMap() {
+  const data = await fbGet("plakalar");
+  if (!data) return {};
+  const map = {};
+  Object.values(data).forEach(p => {
+    if (p.plaka && p.tnbPlaka) map[p.plaka.toUpperCase()] = p.tnbPlaka.toUpperCase();
+  });
+  return map;
 }
 
 // ── Log ──────────────────────────────────────────────────────
@@ -325,6 +336,8 @@ window.updateStaff = updateStaff;
 window.deleteStaff = deleteStaff;
 window.getStaffWithOffDates = getStaffWithOffDates;
 window.getPlakalar = getPlakalar;
+window.getPlakaTnbMap = getPlakaTnbMap;
+window.deletePlaka = deletePlaka;
 window._firebaseApiGet = apiGet;
 window._firebaseApiPost = apiPost;
 window._firebaseApiReady = true;

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Piano Deri — Veri Aktarım</title>
+<style>
+  body{font-family:Arial,sans-serif;background:#0a0a0a;color:#f0f0f0;padding:20px;max-width:700px;margin:0 auto}
+  h2{color:#d8aa4b}
+  .card{background:#1e1f24;border:1px solid rgba(216,170,75,.3);border-radius:12px;padding:20px;margin:16px 0}
+  .btn{background:linear-gradient(135deg,#f3cf75,#b8872d);color:#111;border:0;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:800;cursor:pointer;margin:6px 4px}
+  .btn-dark{background:rgba(255,255,255,.08);color:#f0f0f0;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:10px 20px;font-size:14px;cursor:pointer;margin:6px 4px}
+  input[type=file]{background:rgba(0,0,0,.3);border:1px solid rgba(216,170,75,.3);color:#f0f0f0;border-radius:8px;padding:10px;width:100%;box-sizing:border-box}
+  #log{background:#0d1117;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:14px;font-family:monospace;font-size:12px;max-height:300px;overflow-y:auto;margin-top:12px}
+  .ok{color:#4ade80} .err{color:#ff5f6e} .info{color:#60a5fa}
+  progress{width:100%;height:8px;border-radius:4px;margin:8px 0}
+</style>
+</head>
+<body>
+<h2>🔄 Piano Deri — Firebase Veri Aktarımı</h2>
+<div class="card">
+  <p style="color:#a0a0a0;margin-top:0">Eski Firebase'den (rezervasyon-3f1b7) aldığınız JSON export dosyasını seçin. Veriler yeni Firebase'e (piano-arac-takip) aktarılacak.</p>
+  <input type="file" id="jsonFile" accept=".json">
+  <br><br>
+  <button class="btn" onclick="startImport()">▶ Aktarımı Başlat</button>
+  <button class="btn-dark" onclick="document.getElementById('log').innerHTML=''">Temizle</button>
+  <progress id="prog" value="0" max="100" style="display:none"></progress>
+  <div id="log"></div>
+</div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAkRsrIUiL-9-MT2LhAQUgZ8hF9MDXn9Nc",
+  authDomain: "piano-arac-takip.firebaseapp.com",
+  databaseURL: "https://piano-arac-takip-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "piano-arac-takip",
+  storageBucket: "piano-arac-takip.firebasestorage.app",
+  messagingSenderId: "967974089947",
+  appId: "1:967974089947:web:f86cb1ec99358cec5e88fe"
+};
+
+const app = initializeApp(FIREBASE_CONFIG);
+const db  = getDatabase(app);
+
+function log(msg, cls='') {
+  const el = document.getElementById('log');
+  el.innerHTML += `<div class="${cls}">${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+window.startImport = async function() {
+  const file = document.getElementById('jsonFile').files[0];
+  if (!file) { log('❌ Dosya seçin!','err'); return; }
+  
+  let data;
+  try {
+    const text = await file.text();
+    data = JSON.parse(text);
+    log('✅ JSON dosyası okundu','ok');
+  } catch(e) {
+    log('❌ JSON parse hatası: ' + e.message,'err');
+    return;
+  }
+
+  const sections = Object.keys(data);
+  log(`📋 Bölümler: ${sections.join(', ')}`, 'info');
+  
+  const prog = document.getElementById('prog');
+  prog.style.display = 'block';
+  let done = 0;
+
+  for (const section of sections) {
+    const sectionData = data[section];
+    if (!sectionData || typeof sectionData !== 'object') {
+      log(`⚠️ ${section}: boş, atlandı`);
+      continue;
+    }
+    const count = Object.keys(sectionData).length;
+    log(`📤 ${section}: ${count} kayıt aktarılıyor...`, 'info');
+    try {
+      await set(ref(db, section), sectionData);
+      log(`✅ ${section}: ${count} kayıt aktarıldı`, 'ok');
+    } catch(e) {
+      log(`❌ ${section}: HATA - ${e.message}`, 'err');
+    }
+    done++;
+    prog.value = Math.round((done/sections.length)*100);
+  }
+  
+  prog.value = 100;
+  log('', '');
+  log('🎉 Aktarım tamamlandı! Sayfayı yenileyebilirsiniz.', 'ok');
+}
+</script>
+</body>
+</html>

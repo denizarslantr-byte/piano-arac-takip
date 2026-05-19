@@ -1,12 +1,12 @@
-// Piano Deri — Firebase Konfigürasyon
+// Piano Deri — Firebase Konfigürasyon (piano-arac-takip projesi)
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyAUJG2YGDwKqGcYZ7yhiS-_Jg7vdIyaCfs",
-  authDomain: "rezervasyon-3f1b7.firebaseapp.com",
-  databaseURL: "https://rezervasyon-3f1b7-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "rezervasyon-3f1b7",
-  storageBucket: "rezervasyon-3f1b7.firebasestorage.app",
-  messagingSenderId: "311071244350",
-  appId: "1:311071244350:web:c82f856965d15a676f516f"
+  apiKey: "AIzaSyAkRsrIUiL-9-MT2LhAQUgZ8hF9MDXn9Nc",
+  authDomain: "piano-arac-takip.firebaseapp.com",
+  databaseURL: "https://piano-arac-takip-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "piano-arac-takip",
+  storageBucket: "piano-arac-takip.firebasestorage.app",
+  messagingSenderId: "967974089947",
+  appId: "1:967974089947:web:f86cb1ec99358cec5e88fe"
 };
 
 const ADMIN_PIN_KEY = "adminPin";
