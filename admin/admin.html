@@ -44,7 +44,7 @@
   <div id="apiWarning" class="notice" style="display:none"></div>
 
   <!-- ── Panel ── -->
-  <section id="adminPanel">
+  <div id="adminPanel">
     <div class="panel-card" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
       <span style="color:var(--gold2);font-weight:700">⚙️ Admin Paneli</span>
       <span id="adminUserLabel" style="font-size:11px;color:var(--text2)"></span>
@@ -368,7 +368,7 @@
 
     </div>
 
-  </section>
+  </div>
 </div>
 
 <!-- ── Düzenleme Modalı ── -->
@@ -771,7 +771,10 @@ async function importHotelsExcel(event) {
     const acentaCode = rowVal(row, ["Acenta Kodu","ACENTA KODU","acentaCode"]);
     const status = rowVal(row, ["Durum","DURUM","status"]) || "ACTIVE";
     if (!hotel || !code || !password) { skipped++; continue; }
-    await addHotel({ hotel, code, password, acentaCode, status: status.toUpperCase() });
+    const hObj = { hotel, code, password, acentaCode, status: status.toUpperCase() };
+      if (lat && lng) { hObj.lat = lat; hObj.lng = lng; hObj.uyariM = uyariM; }
+      await addHotel(hObj);
+      if (lat && lng) { const key = _atKey(hotel); await atDbSet(`oteller/${key}`, { ad: hotel, lat, lng, uyariM }); }
     added++;
   }
   showToast(`✅ ${added} otel aktarıldı${skipped ? `, ${skipped} satır atlandı` : ""}`);
@@ -779,8 +782,8 @@ async function importHotelsExcel(event) {
 }
 
 function downloadHotelTemplate() {
-  const headers = ["Otel Adı","Kullanıcı Kodu","Şifre","Acenta Kodu","Durum"];
-  const rows = [["Lara Hotel","PD001","1234","ACN-001","ACTIVE"]];
+  const headers = ["Otel Adı","Kullanıcı Kodu","Şifre","Acenta Kodu","Durum","Enlem (LAT)","Boylam (LNG)","Uyarı Mesafesi (m)"];
+  const rows = [["Lara Hotel","PD001","1234","ACN-001","ACTIVE","36.8841","30.7056","300"]];
   const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Oteller");
