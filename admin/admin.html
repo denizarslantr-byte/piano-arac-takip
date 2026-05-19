@@ -43,20 +43,8 @@
 
   <div id="apiWarning" class="notice" style="display:none"></div>
 
-  <!-- ── Giriş (pianoUser auth varsa gösterilmez) ── -->
-  <section id="pinSection" class="panel-card" style="max-width:460px;margin:0 auto 16px;display:none">
-    <h2 style="color:var(--gold2);margin-top:0">Admin Girişi</h2>
-    <label>Admin PIN</label>
-    <input id="adminPin" type="password" placeholder="PIN girin" onkeydown="if(event.key==='Enter')adminLogin()">
-    <div style="display:flex;align-items:center;gap:8px;margin:10px 0 14px;color:#c0c0c0;font-size:13px">
-      <input type="checkbox" id="rememberAdmin">
-      <span>Beni hatırla</span>
-    </div>
-    <button class="btn-gold" style="width:100%" onclick="adminLogin()">GİRİŞ YAP</button>
-  </section>
-
   <!-- ── Panel ── -->
-  <section id="adminPanel" style="display:none">
+  <section id="adminPanel">
     <div class="panel-card" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
       <span style="color:var(--gold2);font-weight:700">⚙️ Admin Paneli</span>
       <span id="adminUserLabel" style="font-size:11px;color:var(--text2)"></span>
@@ -402,37 +390,24 @@
 <script>
 showApiWarning();
 // ── Kullanıcı Doğrulama ──
-(function(){
-  // DEMO: oturum yoksa otomatik giriş
-if (!sessionStorage.getItem('pianoUser')) {
-  sessionStorage.setItem('pianoUser', JSON.stringify({username:'admin',role:'admin',ad:'Demo Admin',id:0}));
-}
-const u = JSON.parse(sessionStorage.getItem('pianoUser')||'null');
-  if (!u || u.role !== 'admin') {
-    sessionStorage.removeItem('pianoUser');
-    window.location.replace('../giris/index.html');
-  }
-  window._pianoUser = u;
-})();
-function logout(){ sessionStorage.removeItem('pianoUser'); window.location.href='../giris/index.html'; }
+// Auth kaldırıldı — panel açık
+window._pianoUser = {username:"admin",role:"admin",ad:"Admin",id:0};
+function logout(){ window.location.reload(); }
 
 let logsCache = [], hotelsData = [], adminRaporData = null, adminPerfData = null;
 
 // ── Giriş (artık pianoUser ile otomatik açılır) ──────────────
-window.addEventListener("load", () => {
-  // pianoUser auth ile gelindi — panel direkt açık
-  openAdmin();
+window.addEventListener("DOMContentLoaded", () => {
   const u = window._pianoUser;
   const lbl = document.getElementById('adminUserLabel');
-  if (lbl && u) lbl.innerText = '👤 ' + (u.name || u.username);
+  if (lbl && u) lbl.innerText = '👤 Admin';
+  loadHotels();
 });
 
 function adminLogin() {} // Geriye dönük uyumluluk
 function adminLogout() { logout(); }
 
 function openAdmin() {
-  pinSection.style.display = "none";
-  adminPanel.style.display = "block";
   loadHotels();
 }
 
