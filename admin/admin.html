@@ -76,6 +76,11 @@
           <div><label>Şifre</label><input id="nHotelPass" placeholder="Şifre"></div>
           <div><label>Acenta Kodu</label><input id="nHotelAcenta" placeholder="ACN-001"></div>
         </div>
+        <div class="grid grid4" style="margin-top:8px">
+          <div><label>Enlem (LAT)</label><input id="nHotelLat" placeholder="36.1234" type="number" step="0.0001"></div>
+          <div><label>Boylam (LNG)</label><input id="nHotelLng" placeholder="30.5678" type="number" step="0.0001"></div>
+          <div><label>Uyarı Mesafesi (m)</label><input id="nHotelUyariM" placeholder="300" type="number" value="300"></div>
+        </div>
         <br>
         <button class="btn-gold" onclick="saveHotel()">+ Oteli Ekle</button>
         <input type="file" id="hotelImportFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="importHotelsExcel(event)">
@@ -89,12 +94,12 @@
           <thead>
             <tr>
               <th>Otel Adı</th><th>Kullanıcı Kodu</th><th>Şifre</th>
-              <th>Acenta Kodu</th><th>Durum</th>
+              <th>Acenta Kodu</th><th>Koordinat</th><th>Durum</th>
               <th>İşlemler</th>
             </tr>
           </thead>
           <tbody id="hotelTableBody">
-            <tr><td colspan="6" style="text-align:center;color:var(--text2)">Yükleniyor...</td></tr>
+            <tr><td colspan="7" style="text-align:center;color:var(--text2)">Yükleniyor...</td></tr>
           </tbody>
         </table>
       </div>
@@ -345,12 +350,18 @@
           <h3 style="color:var(--green);margin:0;font-size:14px">🚗 Araç Yönetimi</h3>
           <button class="btn-dark btn-sm" onclick="atFetchTnbVehicles()">📡 TNB'den Çek</button>
         </div>
-        <div style="display:flex;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border);flex-wrap:wrap">
-          <input id="atNewPlaka"  class="inp" placeholder="Plaka (07 ABC 946)" style="flex:1;min-width:130px">
-          <input id="atNewSurucu" class="inp" placeholder="Sürücü adı"          style="flex:1;min-width:120px">
-          <input id="atNewTip"    class="inp" placeholder="Tip (Minibüs)"        style="flex:1;min-width:100px">
-          <input id="atNewTel"    class="inp" placeholder="Telefon"              style="flex:1;min-width:110px">
-          <button class="btn-gold" onclick="atAddVehicle()">+ Ekle</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+          <div><label style="font-size:10px;color:var(--text2)">KISA PLAKA (Sistemde)</label>
+            <input id="atNewKisaPlaka" class="inp" placeholder="5413" style="width:100%"></div>
+          <div><label style="font-size:10px;color:var(--text2)">TNB PLAKASI (Takipte)</label>
+            <input id="atNewTnbPlaka" class="inp" placeholder="07K5413" style="width:100%"></div>
+          <div><label style="font-size:10px;color:var(--text2)">SÜRÜCÜ ADI</label>
+            <input id="atNewSurucu" class="inp" placeholder="Sürücü adı" style="width:100%"></div>
+          <div><label style="font-size:10px;color:var(--text2)">ARAÇ TİPİ</label>
+            <input id="atNewTip" class="inp" placeholder="Minibüs" style="width:100%"></div>
+          <div style="display:flex;align-items:flex-end">
+            <button class="btn-gold" onclick="atAddVehicle()">+ Ekle</button>
+          </div>
         </div>
         <div id="atVehicleList"><div style="text-align:center;padding:12px;color:var(--text2);font-size:12px">Araç eklenmedi</div></div>
       </div>
@@ -369,6 +380,11 @@
     <div style="margin-bottom:11px"><label>Kullanıcı Kodu</label><input id="editHotelCode"></div>
     <div style="margin-bottom:11px"><label>Şifre</label><input id="editHotelPass"></div>
     <div style="margin-bottom:11px"><label>Acenta Kodu</label><input id="editHotelAcenta" placeholder="ACN-001"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:11px">
+      <div><label>Enlem (LAT)</label><input id="editHotelLat" type="number" step="0.0001" placeholder="36.1234"></div>
+      <div><label>Boylam (LNG)</label><input id="editHotelLng" type="number" step="0.0001" placeholder="30.5678"></div>
+      <div><label>Uyarı (m)</label><input id="editHotelUyariM" type="number" placeholder="300"></div>
+    </div>
     <div style="margin-bottom:16px">
       <label>Durum</label>
       <select id="editHotelStatus">
@@ -383,10 +399,10 @@
   </div>
 </div>
 
-<script src="../config/config.js?v=20260515-admin-excel-hotel-lock-notif-fix"></script>
-<script src="../config/firebase.js?v=20260515-admin-excel-hotel-lock-notif-fix"></script>
-<script src="../assets/common.js?v=20260515-admin-excel-hotel-lock-notif-fix"></script>
-<script src="../assets/firebase-api.js?v=20260515-admin-excel-hotel-lock-notif-fix"></script>
+<script src="../config/config.js?v=v20260519-v18-dual-plate-coord-merkez"></script>
+<script src="../config/firebase.js?v=v20260519-v18-dual-plate-coord-merkez"></script>
+<script src="../assets/common.js?v=v20260519-v18-dual-plate-coord-merkez"></script>
+<script src="../assets/firebase-api.js?v=v20260519-v18-dual-plate-coord-merkez"></script>
 <script>
 showApiWarning();
 // ── Kullanıcı Doğrulama ──
@@ -410,6 +426,119 @@ function adminLogout() { logout(); }
 function openAdmin() {
   loadHotels();
 }
+
+// ── Otel CRUD ─────────────────────────────────────────────────
+async function loadHotels() {
+  const tbody = document.getElementById('hotelTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text2)">Yükleniyor...</td></tr>';
+  try {
+    hotelsData = await getHotels();
+    if (!hotelsData.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text2)">Henüz otel eklenmedi.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = hotelsData.map(h => {
+      const hasCoord = h.lat && h.lng;
+      const coordBadge = hasCoord
+        ? `<span style="color:#4ade80;font-size:11px">✅ ${parseFloat(h.lat).toFixed(4)}, ${parseFloat(h.lng).toFixed(4)}</span>`
+        : `<span style="color:rgba(255,95,110,.7);font-size:11px">❌ Koordinat yok</span>`;
+      return `<tr>
+        <td><b>${h.hotel||''}</b></td>
+        <td><code style="color:var(--gold)">${h.code||''}</code></td>
+        <td><code style="font-size:11px">${h.password||''}</code></td>
+        <td>${h.acentaCode||''}</td>
+        <td>${coordBadge}</td>
+        <td><span class="badge ${h.status==='ACTIVE'?'exited':'cancelled'}">${h.status==='ACTIVE'?'AKTİF':'PASİF'}</span></td>
+        <td>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <button class="btn-blue btn-sm" onclick="openEditHotel(${JSON.stringify(h).replace(/"/g,"&quot;")})">✏️</button>
+            <button class="btn-red btn-sm" onclick="deleteHotelUI('${h.id||h._key}','${h.hotel}')">🗑</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+    // Rapor otel select güncelle
+    const sel = document.getElementById('aRHotel');
+    if (sel) {
+      sel.innerHTML = '<option value="">Oteller: Tümü</option>' +
+        hotelsData.map(h=>`<option value="${h.hotel}">${h.hotel}</option>`).join('');
+    }
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="color:red;text-align:center">Hata: ${e.message}</td></tr>`;
+  }
+}
+
+async function saveHotel() {
+  const hotel     = document.getElementById('nHotelName')?.value.trim();
+  const code      = document.getElementById('nHotelCode')?.value.trim();
+  const password  = document.getElementById('nHotelPass')?.value.trim();
+  const acentaCode= document.getElementById('nHotelAcenta')?.value.trim();
+  const lat       = parseFloat(document.getElementById('nHotelLat')?.value) || null;
+  const lng       = parseFloat(document.getElementById('nHotelLng')?.value) || null;
+  const uyariM    = parseInt(document.getElementById('nHotelUyariM')?.value) || 300;
+  if (!hotel || !code) return showToast('Otel adı ve kullanıcı kodu zorunlu', 'err');
+  if (hotelsData.find(h => h.code === code)) return showToast('Bu kullanıcı kodu zaten var', 'err');
+  const obj = { hotel, code, password, acentaCode, status: 'ACTIVE' };
+  if (lat && lng) { obj.lat = lat; obj.lng = lng; obj.uyariM = uyariM; }
+  await addHotel(obj);
+  // Araç takip DB'ye de koordinat yaz (aynı key ile)
+  if (lat && lng) {
+    const key = _atKey(hotel);
+    await atDbSet(`oteller/${key}`, { ad: hotel, lat, lng, uyariM });
+  }
+  showToast('✅ ' + hotel + ' eklendi');
+  ['nHotelName','nHotelCode','nHotelPass','nHotelAcenta','nHotelLat','nHotelLng'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  document.getElementById('nHotelUyariM').value = '300';
+  await loadHotels();
+}
+
+function openEditHotel(h) {
+  document.getElementById('editHotelId').value    = h.id || h._key || '';
+  document.getElementById('editHotelName').value  = h.hotel  || '';
+  document.getElementById('editHotelCode').value  = h.code   || '';
+  document.getElementById('editHotelPass').value  = h.password|| '';
+  document.getElementById('editHotelAcenta').value= h.acentaCode || '';
+  document.getElementById('editHotelStatus').value= h.status || 'ACTIVE';
+  document.getElementById('editHotelLat').value   = h.lat  || '';
+  document.getElementById('editHotelLng').value   = h.lng  || '';
+  document.getElementById('editHotelUyariM').value= h.uyariM || 300;
+  document.getElementById('editModal').style.display = 'flex';
+}
+
+async function saveEditHotel() {
+  const id        = document.getElementById('editHotelId').value;
+  const hotel     = document.getElementById('editHotelName').value.trim();
+  const code      = document.getElementById('editHotelCode').value.trim();
+  const password  = document.getElementById('editHotelPass').value.trim();
+  const acentaCode= document.getElementById('editHotelAcenta').value.trim();
+  const status    = document.getElementById('editHotelStatus').value;
+  const lat       = parseFloat(document.getElementById('editHotelLat').value) || null;
+  const lng       = parseFloat(document.getElementById('editHotelLng').value) || null;
+  const uyariM    = parseInt(document.getElementById('editHotelUyariM').value) || 300;
+  if (!hotel || !id) return showToast('Hata: otel adı/ID eksik', 'err');
+  const obj = { hotel, code, password, acentaCode, status };
+  if (lat && lng) { obj.lat = lat; obj.lng = lng; obj.uyariM = uyariM; }
+  await updateHotel(id, obj);
+  if (lat && lng) {
+    const key = _atKey(hotel);
+    await atDbSet(`oteller/${key}`, { ad: hotel, lat, lng, uyariM });
+  }
+  document.getElementById('editModal').style.display = 'none';
+  showToast('✅ ' + hotel + ' güncellendi');
+  await loadHotels();
+}
+
+async function deleteHotelUI(id, name) {
+  if (!confirm(`"${name}" silinsin mi? Bu işlem geri alınamaz.`)) return;
+  await deleteHotel(id);
+  showToast('🗑 ' + name + ' silindi');
+  await loadHotels();
+}
+
+
 
 // ── Tab ────────────────────────────────────────────────────────
 function openTab(n) {
@@ -1266,52 +1395,22 @@ async function atLoadVehicles() {
     const data = await atDbGet('araclar_tanim')||{};
     const list = Object.entries(data);
     if (!list.length){ el.innerHTML='<div style="text-align:center;padding:12px;color:var(--text2);font-size:12px">Henüz araç eklenmedi</div>'; return; }
-    el.innerHTML = list.map(([key,v])=>`
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:6px;align-items:center;padding:7px 8px;background:var(--bg2);border-radius:5px;border-left:2px solid var(--green);margin-bottom:4px">
-        <span style="font-size:12px;font-weight:700">🚗 ${v.plaka||'—'}</span>
-        <span style="font-size:11px;color:var(--text2)">${v.surucu||'—'}</span>
-        <span style="font-size:11px;color:var(--text2)">${v.tip||'—'}</span>
-        <span style="font-size:11px;color:var(--text2)">${v.tel||'—'}</span>
-        <button class="btn-red btn-sm" onclick="atDeleteVehicle('${key}')" style="font-size:10px">🗑</button>
-      </div>`).join('');
-  } catch(e){ el.innerHTML='<div style="color:var(--red);font-size:12px;padding:8px">Hata: '+e.message+'</div>'; }
-}
-
-async function atAddVehicle() {
-  const plaka  = document.getElementById('atNewPlaka')?.value.trim().toUpperCase();
-  const surucu = document.getElementById('atNewSurucu')?.value.trim();
-  const tip    = document.getElementById('atNewTip')?.value.trim()||'Minibüs';
-  const tel    = document.getElementById('atNewTel')?.value.trim();
-  if (!plaka){ showToast('Plaka girin!','err'); return; }
-  const key = plaka.replace(/\s/g,'_');
-  await atDbSet(`araclar_tanim/${key}`, {plaka, surucu, tip, tel, eklendi:new Date().toISOString()});
-  ['atNewPlaka','atNewSurucu','atNewTel'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  showToast(`✅ ${plaka} eklendi`);
-  atLoadVehicles();
-}
-
-async function atDeleteVehicle(key) {
-  if (!confirm('Bu araç silinsin mi?')) return;
-  await atDbRemove(`araclar_tanim/${key}`);
-  showToast('Araç silindi');
-  atLoadVehicles();
-}
-
-// ── TNB TEST ───────────────────────────────────
-async function atTestTnb() {
-  const res = document.getElementById('atTestResult');
-  res.textContent = 'Bağlanıyor...'; res.style.color='var(--text2)';
-  try {
-    const firma = document.getElementById('atTnbFirma').value||'3029';
-    const user  = document.getElementById('atTnbUser').value||'kayaderiwb';
-    const pass  = document.getElementById('atTnbPass').value||'1234';
-    const soap = `<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body><wsGetAllVehicles xmlns="http://tempuri.org/"><firmaKodu>${firma}</firmaKodu><kullaniciAdi>${user}</kullaniciAdi><sifre>${pass}</sifre></wsGetAllVehicles></soap:Body></soap:Envelope>`;
-    const r = await fetch('https://ws.ats.tnbmobil.com.tr/webservis.asmx',{method:'POST',headers:{'Content-Type':'text/xml; charset=utf-8','SOAPAction':'http://tempuri.org/wsGetAllVehicles'},body:soap});
-    const txt = await r.text();
-    const cnt = (txt.match(/PlateNo|Plate/gi)||[]).length;
-    res.textContent = cnt>0 ? `✅ Bağlandı! ${Math.floor(cnt/2)} araç` : '⚠️ Bağlandı ama araç yok';
-    res.style.color = cnt>0 ? 'var(--green)' : 'var(--warn)';
-  } catch(e){ res.textContent='❌ '+e.message; res.style.color='var(--red)'; }
+    el.innerHTML = list.map(([key,v])=>
+      `<div style="display:grid;grid-template-columns:120px 140px 1fr 1fr auto;gap:6px;align-items:center;padding:7px 8px;background:var(--bg2);border-radius:5px;border-left:2px solid var(--green);margin-bottom:4px">
+        <div>
+          <div style="font-size:10px;color:var(--text2)">Kısa Plaka</div>
+          <b style="color:#fff;font-size:13px">${v.kisaPlaka||v.plaka||''}</b>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--text2)">TNB Plakası</div>
+          <b style="color:var(--gold);font-size:13px">${v.tnbPlaka||v.plaka||''}</b>
+        </div>
+        <span style="color:var(--text2);font-size:12px">${v.surucu||''}</span>
+        <span style="color:var(--text2);font-size:12px">${v.tip||''}</span>
+        <button class="btn-red btn-sm" onclick="atDeleteVehicle('${key}','${v.kisaPlaka||v.plaka||''}')">🗑</button>
+      </div>`
+    ).join('');
+  } catch(e){ el.innerHTML='<div style="color:red;font-size:12px">Hata: '+e.message+'</div>'; }
 }
 
 async function atFetchTnbVehicles() {
@@ -1333,6 +1432,20 @@ async function atFetchTnbVehicles() {
     showToast(`✅ ${plates.length} araç bulundu`);
   } catch(e){ el.innerHTML=`<div style="color:var(--red);font-size:12px;padding:8px">❌ ${e.message}</div>`; }
 }
+
+async function atDeleteVehicle(key, kisaPlaka) {
+  if (!confirm(`"${kisaPlaka}" aracı silinsin mi?`)) return;
+  await atDbRemove(`araclar_tanim/${key}`);
+  // Ana Firebase plakalar'dan da sil
+  try {
+    const plakalars = await getPlakalar();
+    const found = plakalars.find(p => p.plaka === kisaPlaka);
+    if (found) await deletePlaka(found.id);
+  } catch(e) {}
+  showToast(`🗑 ${kisaPlaka} silindi`);
+  atLoadVehicles();
+}
+
 
 </script>
 </body>
